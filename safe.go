@@ -1,10 +1,8 @@
 package safe
 
 import (
-	"errors"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/signer/core"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"math/big"
@@ -90,27 +88,26 @@ func GetApprovedHashSafeTxn(safeTxn *core.GnosisSafeTx, owner common.Address) er
 	return nil
 }
 
-func PackTransactions(request *SafeMultiSendRequest) ([]byte, error) {
+func PackTransactions(request *SafeMultiSendRequest) ([]byte, *big.Int, error) {
 	builder := NewPackBuilder()
+	totalValue := new(big.Int).SetInt64(0)
 	for _, txn := range request.Transactions {
-		value, isSet := new(big.Int).SetString(txn.Value, 10)
-		if !isSet {
-			return nil, errors.New("failed to parse value")
-		}
-		callData, err := hexutil.Decode(txn.Calldata)
+		callData := common.Hex2Bytes(txn.CallData())
+		rawTransaction, err := PackTxn(uint8(0), txn.To(), txn.Value(), callData)
 		if err != nil {
-			return nil, err
-		}
-		rawTransaction, err := PackTxn(uint8(0), txn.To, value, callData)
-		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		err = builder.AddBytes(rawTransaction)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+		totalValue.And(totalValue, txn.Value())
 	}
-	return builder.Pack()
+	packed, err := builder.Pack()
+	if err != nil {
+		return nil, nil, err
+	}
+	return packed, totalValue, nil
 }
 
 func PackTxn(operation uint8, toAddress common.Address, value *big.Int, callData []byte) ([]byte, error) {
