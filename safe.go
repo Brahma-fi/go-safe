@@ -5,7 +5,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/signer/core"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"math/big"
@@ -61,19 +60,34 @@ func GetEncodedExecTransaction(safeTxn *core.GnosisSafeTx, abi *abi.ABI) ([]byte
 	)
 }
 
-func ConstructSafeTxn(request *SafeTxnRequest) *core.GnosisSafeTx {
-	return &core.GnosisSafeTx{
-		Safe:           common.NewMixedcaseAddress(request.SafeAddress),
-		To:             common.NewMixedcaseAddress(request.To),
-		Value:          (math.Decimal256)(*request.Value),
-		GasPrice:       *math.NewDecimal256(0),
-		Data:           (*hexutil.Bytes)(&request.Data),
-		Operation:      request.Operation,
-		GasToken:       request.GasToken,
-		RefundReceiver: request.RefundReceiver,
-		Nonce:          *request.Nonce,
-		ChainId:        (*math.HexOrDecimal256)(request.ChainId),
+// GetApprovedHashSafeTxn see https://github.com/safe-global/safe-contracts/blob/main/contracts/Safe.sol#L317
+func GetApprovedHashSafeTxn(safeTxn *core.GnosisSafeTx, owner common.Address) error {
+	builder := NewPackBuilder()
+	// The signature format is a compact form of:
+	//   {bytes32 r}{bytes32 s}{uint8 v}
+	// Compact means, uint8 is not padded to 32 bytes.
+	// r bytes32
+	err := builder.AddBytes(AddressToBytes32(owner))
+	if err != nil {
+		return err
 	}
+	// s bytes32
+	err = builder.AddBytes(make([]byte, 32))
+	if err != nil {
+		return err
+	}
+	// v uint8
+	err = builder.AddUint8(1)
+	if err != nil {
+		return err
+	}
+	//pack it !!!
+	packedSignature, err := builder.Pack()
+	if err != nil {
+		return err
+	}
+	safeTxn.Signature = packedSignature
+	return nil
 }
 
 func PackTransactions(request *SafeMultiSendRequest) ([]byte, error) {
@@ -131,4 +145,8 @@ func GetEncodedMultiSendTransaction(callData []byte, abi *abi.ABI) ([]byte, erro
 		)
 	*/
 	return abi.Pack("multiSend", callData)
+}
+
+func AddressToBytes32(address common.Address) []byte {
+	return append(make([]byte, 12), address.Bytes()...)
 }
