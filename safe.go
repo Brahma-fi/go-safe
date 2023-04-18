@@ -53,8 +53,8 @@ func GetEncodedExecTransaction(safeTxn *core.GnosisSafeTx, abi *abi.ABI) ([]byte
 	*/
 	return abi.Pack(
 		"execTransaction", safeTxn.To.Address(), (*big.Int)(&safeTxn.Value),
-		([]byte)(*safeTxn.Data), safeTxn.Operation, safeTxn.SafeTxGas, safeTxn.BaseGas,
-		safeTxn.GasPrice, safeTxn.GasToken, safeTxn.RefundReceiver, ([]byte)(safeTxn.Signature),
+		([]byte)(*safeTxn.Data), safeTxn.Operation,&safeTxn.SafeTxGas, &safeTxn.BaseGas,
+		(*big.Int)(&safeTxn.GasPrice), safeTxn.GasToken, safeTxn.RefundReceiver, ([]byte)(safeTxn.Signature),
 	)
 }
 
