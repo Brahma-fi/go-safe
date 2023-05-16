@@ -1,11 +1,14 @@
 package safe
 
 import (
+	"fmt"
+	"math/big"
+	"strings"
+	"github.com/Brahma-fi/go-safe/contracts/safe_vOneDotThreeBinding"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/signer/core"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	"math/big"
 )
 
 func GetSignedSafeTxn(safeTxn *core.GnosisSafeTx, signatures [][]byte) error {
@@ -53,7 +56,7 @@ func GetEncodedExecTransaction(safeTxn *core.GnosisSafeTx, abi *abi.ABI) ([]byte
 	*/
 	return abi.Pack(
 		"execTransaction", safeTxn.To.Address(), (*big.Int)(&safeTxn.Value),
-		([]byte)(*safeTxn.Data), safeTxn.Operation,&safeTxn.SafeTxGas, &safeTxn.BaseGas,
+		([]byte)(*safeTxn.Data), safeTxn.Operation, &safeTxn.SafeTxGas, &safeTxn.BaseGas,
 		(*big.Int)(&safeTxn.GasPrice), safeTxn.GasToken, safeTxn.RefundReceiver, ([]byte)(safeTxn.Signature),
 	)
 }
@@ -146,4 +149,23 @@ func GetEncodedMultiSendTransaction(callData []byte, abi *abi.ABI) ([]byte, erro
 
 func AddressToBytes32(address common.Address) []byte {
 	return append(make([]byte, 12), address.Bytes()...)
+}
+
+func GetModuleTransaction(callData []byte, to common.Address, value big.Int, operation uint8) ([]byte, error) {
+	/*
+	   function execTransactionFromModule(
+	       address to,
+	       uint256 value,
+	       bytes memory data,
+	       Enum.Operation operation
+	   )
+	*/
+
+	parsedAbi, err := abi.JSON(strings.NewReader(safe_vOneDotThreeBinding.SafeVOneDotThreeBindingMetaData.ABI))
+	if err != nil {
+		fmt.Println("failed to parse gearboxAbi", err)
+		return nil, err
+	}
+	safeAbi := &parsedAbi
+	return safeAbi.Pack("execTransactionFromModule", to, value, callData, operation)
 }
