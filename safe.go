@@ -151,7 +151,7 @@ func AddressToBytes32(address common.Address) []byte {
 	return append(make([]byte, 12), address.Bytes()...)
 }
 
-func GetModuleTransaction(callData []byte, to common.Address, value big.Int, operation uint8) ([]byte, error) {
+func GetModuleTransaction(callData []byte, to common.Address, value *big.Int, operation uint8) ([]byte, error) {
 	/*
 	   function execTransactionFromModule(
 	       address to,
