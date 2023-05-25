@@ -2,6 +2,7 @@ package safe
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 )
 
@@ -16,4 +17,23 @@ type Transaction interface {
 	To() common.Address
 	CallData() string
 	Value() *big.Int
+}
+
+type InternalTxn struct {
+	Operation uint8          `json:"operation"`
+	To        common.Address `json:"to"`
+	Value     *big.Int       `json:"value"`
+	Data      hexutil.Bytes  `json:"data"`
+}
+
+type SafeMultiSigEvent struct {
+	InternalTxn
+	Operation      uint8          `json:"operation"`
+	SafeTxGas      *big.Int       `json:"safeTxGas"`
+	BaseGas        *big.Int       `json:"baseGas"`
+	GasPrice       *big.Int       `json:"gasPrice"`
+	GasToken       common.Address `json:"gasToken"`
+	RefundReceiver common.Address `json:"refundReceiver"`
+	Signatures     hexutil.Bytes  `json:"signatures"`
+	AdditionalInfo hexutil.Bytes  `json:"additionalInfo"`
 }
