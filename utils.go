@@ -1,0 +1,132 @@
+package safe
+
+import (
+	"errors"
+	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"math/big"
+	"strings"
+)
+
+func ExtractExecTransactionCallData(calldata []byte) (execCallData []byte, err error) {
+	// encode to hex string
+	encodedCallData := hexutil.Encode(calldata)
+	// selector index searches for execTransaction selector inside the calldata
+	selectorIndex := strings.Index(encodedCallData, "6a761202")
+	if selectorIndex == -1 {
+		return nil, errors.New("no execSignature selector found")
+	}
+	// if the selectorIndex is less than the length of the encoded uint256
+	// then the callData is encoded directly
+	if selectorIndex < 32 {
+		// return the actual call data without the selector
+		return hexutil.Decode(fmt.Sprintf("0x%s", encodedCallData[selectorIndex+8:]))
+	}
+	encodedCallDataLength := []byte{}
+	encodedCallDataLength, err = hexutil.Decode(
+		fmt.Sprintf(
+			"0x%s", encodedCallData[selectorIndex-32:selectorIndex],
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+	callDataLength := new(big.Int).SetBytes(encodedCallDataLength)
+	if callDataLength.Uint64() == 0 {
+		return nil, errors.New("parsed callDataLength is zero")
+	}
+	// length is encoded in hex, hence double the length to slice from the hex-encoded string
+	encodedCallDataEndIndex := selectorIndex + int(callDataLength.Int64()*2)
+	if len(encodedCallData) < encodedCallDataEndIndex {
+		return nil, errors.New("parsed callDataLength is invalid")
+
+	}
+	// get the actual call data without the selector
+	return hexutil.Decode(
+		fmt.Sprintf(
+			"0x%s", encodedCallData[selectorIndex+8:encodedCallDataEndIndex],
+		),
+	)
+}
+func ParseMultiSendData(data []byte) ([]InternalTxn, error) {
+	if functionSig, err := safeSlice(data, 0, 4); err != nil {
+		return nil, err
+	} else {
+		if common.Bytes2Hex(functionSig) != "8d80ff0a" {
+			return nil, nil
+		}
+	}
+	var encodedLen *big.Int
+	if length, err := safeSlice(data, 36, 68); err != nil {
+		return nil, err
+	} else {
+		encodedLen = new(big.Int).SetBytes(length)
+	}
+	// no encoded data found so return with nothing
+	if encodedLen.Int64() == 0 {
+		return nil, nil
+	}
+	var multiSendPacked []byte
+	var internalTransactions []InternalTxn
+	var err error
+	if multiSendPacked, _, err = readNAndShift(data, 68, int(encodedLen.Int64())); err != nil {
+		return nil, err
+	}
+	baseOffset := 0
+	for {
+		if baseOffset >= len(multiSendPacked) {
+			break
+		}
+		internalTxn := InternalTxn{}
+		var operation []byte
+		operation, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 1)
+		if err != nil {
+			return nil, err
+		}
+		internalTxn.Operation = operation[0]
+		var toAddress []byte
+		toAddress, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 20)
+		if err != nil {
+			return nil, err
+		}
+		internalTxn.To = common.BytesToAddress(toAddress)
+		var value []byte
+		value, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 32)
+		if err != nil {
+			return nil, err
+		}
+		internalTxn.Value = new(big.Int).SetBytes(value)
+		var datalen []byte
+		datalen, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 32)
+		if err != nil {
+			return nil, err
+		}
+		dataLen := new(big.Int).SetBytes(datalen).Int64()
+		if dataLen == 0 {
+			internalTransactions = append(internalTransactions, internalTxn)
+			continue
+		}
+		internalTxn.Data, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, int(dataLen))
+		if err != nil {
+			return nil, err
+		}
+		internalTransactions = append(internalTransactions, internalTxn)
+	}
+	return internalTransactions, err
+}
+
+func safeSlice[T any](slice []T, from int, to int) ([]T, error) {
+	if from > len(slice) || to > len(slice) || from < 0 || to < 0 || from > to {
+		return nil, errors.New("invalid range")
+	}
+	return slice[from:to], nil
+}
+
+func readNAndShift[T any](data []T, baseOffset int, n int) ([]T, int, error) {
+	if subData, err := safeSlice(data, baseOffset, baseOffset+n); err != nil {
+		return nil, baseOffset, err
+	} else {
+		return subData, baseOffset + n, nil
+	}
+}
