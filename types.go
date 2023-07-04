@@ -26,7 +26,7 @@ type InternalTxn struct {
 	Data      hexutil.Bytes  `json:"data"`
 }
 
-type SafeMultiSigEvent struct {
+type SafeMultiSigInput struct {
 	InternalTxn
 	Operation      uint8          `json:"operation"`
 	SafeTxGas      *big.Int       `json:"safeTxGas"`
@@ -35,5 +35,10 @@ type SafeMultiSigEvent struct {
 	GasToken       common.Address `json:"gasToken"`
 	RefundReceiver common.Address `json:"refundReceiver"`
 	Signatures     hexutil.Bytes  `json:"signatures"`
-	AdditionalInfo hexutil.Bytes  `json:"additionalInfo"`
+}
+
+type SafeMultiSigEvent struct {
+	InternalTxn
+	SafeMultiSigInput
+	AdditionalInfo hexutil.Bytes `json:"additionalInfo"`
 }
