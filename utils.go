@@ -9,6 +9,12 @@ import (
 	"strings"
 )
 
+const (
+	ADDRESS_SIZE = 20
+	UINT256_SIZE = 32
+	UINT8_SIZE   = 1
+)
+
 func ExtractExecTransactionCallData(calldata []byte) (execCallData []byte, err error) {
 	// encode to hex string
 	encodedCallData := hexutil.Encode(calldata)
@@ -19,7 +25,7 @@ func ExtractExecTransactionCallData(calldata []byte) (execCallData []byte, err e
 	}
 	// if the selectorIndex is less than the length of the encoded uint256
 	// then the callData is encoded directly
-	if selectorIndex < 32 {
+	if selectorIndex < UINT256_SIZE {
 		// return the actual call data without the selector
 		return hexutil.Decode(fmt.Sprintf("0x%s", encodedCallData[selectorIndex+8:]))
 	}
@@ -58,7 +64,7 @@ func ParseMultiSendData(data []byte) ([]InternalTxn, error) {
 		}
 	}
 	var encodedLen *big.Int
-	if length, err := safeSlice(data, 36, 68); err != nil {
+	if length, err := safeSlice(data, 36, 36+UINT256_SIZE); err != nil {
 		return nil, err
 	} else {
 		encodedLen = new(big.Int).SetBytes(length)
@@ -70,7 +76,7 @@ func ParseMultiSendData(data []byte) ([]InternalTxn, error) {
 	var multiSendPacked []byte
 	var internalTransactions []InternalTxn
 	var err error
-	if multiSendPacked, _, err = readNAndShift(data, 68, int(encodedLen.Int64())); err != nil {
+	if multiSendPacked, _, err = readNAndShift(data, 36+UINT256_SIZE, int(encodedLen.Int64())); err != nil {
 		return nil, err
 	}
 	baseOffset := 0
@@ -91,25 +97,25 @@ func parseInternalTransaction(multiSendPacked []byte, baseOffset int) (InternalT
 	var operation []byte
 	var err error
 	internalTxn := InternalTxn{}
-	operation, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 1)
+	operation, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, UINT8_SIZE)
 	if err != nil {
 		return internalTxn, 0, err
 	}
 	internalTxn.Operation = operation[0]
 	var toAddress []byte
-	toAddress, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 20)
+	toAddress, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, ADDRESS_SIZE)
 	if err != nil {
 		return internalTxn, 0, err
 	}
 	internalTxn.To = common.BytesToAddress(toAddress)
 	var value []byte
-	value, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 32)
+	value, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, UINT256_SIZE)
 	if err != nil {
 		return internalTxn, 0, err
 	}
 	internalTxn.Value = new(big.Int).SetBytes(value)
 	var datalen []byte
-	datalen, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 32)
+	datalen, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, UINT256_SIZE)
 	if err != nil {
 		return internalTxn, 0, err
 	}
