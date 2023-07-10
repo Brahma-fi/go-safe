@@ -2,13 +2,13 @@ package safe
 
 import (
 	"fmt"
-	"math/big"
-	"strings"
 	"github.com/Brahma-fi/go-safe/contracts/safe_vOneDotThreeBinding"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/signer/core"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+	"math/big"
+	"strings"
 )
 
 func GetSignedSafeTxn(safeTxn *core.GnosisSafeTx, signatures [][]byte) error {
@@ -96,7 +96,7 @@ func PackTransactions(request *SafeMultiSendRequest) ([]byte, *big.Int, error) {
 	totalValue := new(big.Int).SetInt64(0)
 	for _, txn := range request.Transactions {
 		callData := common.Hex2Bytes(txn.CallData())
-		rawTransaction, err := PackTxn(uint8(0), txn.To(), txn.Value(), callData)
+		rawTransaction, err := PackTxn(txn.Operation(), txn.To(), txn.Value(), callData)
 		if err != nil {
 			return nil, nil, err
 		}
