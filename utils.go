@@ -79,35 +79,7 @@ func ParseMultiSendData(data []byte) ([]InternalTxn, error) {
 			break
 		}
 		internalTxn := InternalTxn{}
-		var operation []byte
-		operation, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 1)
-		if err != nil {
-			return nil, err
-		}
-		internalTxn.Operation = operation[0]
-		var toAddress []byte
-		toAddress, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 20)
-		if err != nil {
-			return nil, err
-		}
-		internalTxn.To = common.BytesToAddress(toAddress)
-		var value []byte
-		value, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 32)
-		if err != nil {
-			return nil, err
-		}
-		internalTxn.Value = new(big.Int).SetBytes(value)
-		var datalen []byte
-		datalen, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 32)
-		if err != nil {
-			return nil, err
-		}
-		dataLen := new(big.Int).SetBytes(datalen).Int64()
-		if dataLen == 0 {
-			internalTransactions = append(internalTransactions, internalTxn)
-			continue
-		}
-		internalTxn.Data, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, int(dataLen))
+		internalTxn, baseOffset, err = parseInternalTransaction(multiSendPacked, baseOffset)
 		if err != nil {
 			return nil, err
 		}
@@ -115,7 +87,42 @@ func ParseMultiSendData(data []byte) ([]InternalTxn, error) {
 	}
 	return internalTransactions, err
 }
-
+func parseInternalTransaction(multiSendPacked []byte, baseOffset int) (InternalTxn, int, error) {
+	var operation []byte
+	var err error
+	internalTxn := InternalTxn{}
+	operation, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 1)
+	if err != nil {
+		return internalTxn, 0, err
+	}
+	internalTxn.Operation = operation[0]
+	var toAddress []byte
+	toAddress, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 20)
+	if err != nil {
+		return internalTxn, 0, err
+	}
+	internalTxn.To = common.BytesToAddress(toAddress)
+	var value []byte
+	value, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 32)
+	if err != nil {
+		return internalTxn, 0, err
+	}
+	internalTxn.Value = new(big.Int).SetBytes(value)
+	var datalen []byte
+	datalen, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, 32)
+	if err != nil {
+		return internalTxn, 0, err
+	}
+	dataLen := new(big.Int).SetBytes(datalen).Int64()
+	if dataLen == 0 {
+		return internalTxn, baseOffset, nil
+	}
+	internalTxn.Data, baseOffset, err = readNAndShift(multiSendPacked, baseOffset, int(dataLen))
+	if err != nil {
+		return internalTxn, 0, err
+	}
+	return internalTxn, baseOffset, nil
+}
 func safeSlice[T any](slice []T, from int, to int) ([]T, error) {
 	if from > len(slice) || to > len(slice) || from < 0 || to < 0 || from > to {
 		return nil, errors.New("invalid range")
