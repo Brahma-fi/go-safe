@@ -17,6 +17,7 @@ type Transaction interface {
 	To() common.Address
 	CallData() string
 	Value() *big.Int
+	Operation() uint8
 }
 
 type InternalTxn struct {
