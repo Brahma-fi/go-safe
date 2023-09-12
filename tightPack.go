@@ -1,9 +1,11 @@
 package safe
 
 import (
+	"encoding/binary"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 type TightPack struct {
@@ -38,6 +40,13 @@ func (pack *TightPack) AddUint256(data *big.Int) error {
 
 func (pack *TightPack) AddUint8(data uint8) error {
 	pack.arguments = append(pack.arguments, []byte{data})
+	return nil
+}
+
+func (pack *TightPack) AddUint32(data uint32) error {
+	encodedUint32 := make([]byte, 4)
+	binary.BigEndian.PutUint32(encodedUint32, data)
+	pack.arguments = append(pack.arguments, encodedUint32)
 	return nil
 }
 
