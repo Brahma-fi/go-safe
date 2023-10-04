@@ -3,10 +3,11 @@ package safe
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 	"strings"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 const (
@@ -55,6 +56,7 @@ func ExtractExecTransactionCallData(calldata []byte) (execCallData []byte, err e
 		),
 	)
 }
+
 func ParseMultiSendData(data []byte) ([]InternalTxn, error) {
 	if functionSig, err := safeSlice(data, 0, 4); err != nil {
 		return nil, err
@@ -93,6 +95,7 @@ func ParseMultiSendData(data []byte) ([]InternalTxn, error) {
 	}
 	return internalTransactions, err
 }
+
 func parseInternalTransaction(multiSendPacked []byte, baseOffset int) (InternalTxn, int, error) {
 	var operation []byte
 	var err error
@@ -129,6 +132,7 @@ func parseInternalTransaction(multiSendPacked []byte, baseOffset int) (InternalT
 	}
 	return internalTxn, baseOffset, nil
 }
+
 func safeSlice[T any](slice []T, from int, to int) ([]T, error) {
 	if from > len(slice) || to > len(slice) || from < 0 || to < 0 || from > to {
 		return nil, errors.New("invalid range")
