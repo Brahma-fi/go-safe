@@ -1,9 +1,10 @@
 package safe
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"math/big"
 )
 
 type SafeMultiSendRequest struct {
@@ -28,7 +29,7 @@ type InternalTxn struct {
 }
 
 type SafeMultiSigInput struct {
-	InternalTxn
+	InternalTxn    `mapsstructure:",squash"`
 	Operation      uint8          `json:"operation"`
 	SafeTxGas      *big.Int       `json:"safeTxGas"`
 	BaseGas        *big.Int       `json:"baseGas"`
