@@ -2,13 +2,18 @@ package safe
 
 import (
 	"fmt"
-	"github.com/Brahma-fi/go-safe/contracts/safe_vOneDotThreeBinding"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/signer/core"
-	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"math/big"
 	"strings"
+
+	"github.com/Brahma-fi/console-transaction-builder/contracts/safe"
+	builder "github.com/Brahma-fi/console-transaction-builder/types"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/signer/core"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+
+	"github.com/Brahma-fi/go-safe/contracts/safe_vOneDotThreeBinding"
 )
 
 func GetSignedSafeTxn(safeTxn *core.GnosisSafeTx, signatures [][]byte) error {
@@ -168,4 +173,48 @@ func GetModuleTransaction(callData []byte, to common.Address, value *big.Int, op
 	}
 	safeAbi := &parsedAbi
 	return safeAbi.Pack("execTransactionFromModule", to, value, callData, operation)
+}
+
+// TODO:MULTISIG better to convert into struct that inherits these functions. Move it go-safe
+func GetSafeNonce(client *ethclient.Client, safeAddress common.Address) (*big.Int, error) {
+	userSafe, err := safe.NewSafe(safeAddress, client)
+	if err != nil {
+		return nil, err
+	}
+	return userSafe.Nonce(nil)
+}
+
+func IsValidOwner(client *ethclient.Client, safeAddress common.Address, owner common.Address) (bool, error) {
+	userSafe, err := safe.NewSafe(safeAddress, client)
+	if err != nil {
+		return false, err
+	}
+	return userSafe.IsOwner(nil, owner)
+}
+
+func GetThreshold(client *ethclient.Client, safeAddress common.Address) (*big.Int, error) {
+	userSafe, err := safe.NewSafe(safeAddress, client)
+	if err != nil {
+		return nil, err
+	}
+	return userSafe.GetThreshold(nil)
+}
+
+func GetTransactionHash(client *ethclient.Client, safeAddress common.Address, txn *builder.SafeTx) (
+	common.Hash, error,
+) {
+	userSafe, err := safe.NewSafe(safeAddress, client)
+	if err != nil {
+		return common.HexToHash(""), err
+	}
+
+	// GetTransactionHash(opts *bind.CallOpts, to common.Address, value *big.Int, data []byte, operation uint8, safeTxGas *big.Int, baseGas *big.Int, gasPrice *big.Int, gasToken common.Address, refundReceiver common.Address, _nonce *big.Int)
+	txnHash, err := userSafe.GetTransactionHash(
+		nil, txn.To.Address(), (*big.Int)(&txn.Value), ([]byte)(*txn.Data), txn.Operation, &txn.SafeTxGas, &txn.BaseGas,
+		(*big.Int)(&txn.GasPrice), txn.GasToken, txn.RefundReceiver, &txn.Nonce,
+	)
+	if err != nil {
+		return common.HexToHash(""), err
+	}
+	return txnHash, nil
 }

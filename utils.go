@@ -3,16 +3,23 @@ package safe
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 	"strings"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
 const (
 	ADDRESS_SIZE = 20
 	UINT256_SIZE = 32
 	UINT8_SIZE   = 1
+)
+
+var (
+	ErrInvalidRange = errors.New("invalid range")
 )
 
 func ExtractExecTransactionCallData(calldata []byte) (execCallData []byte, err error) {
@@ -55,8 +62,9 @@ func ExtractExecTransactionCallData(calldata []byte) (execCallData []byte, err e
 		),
 	)
 }
+
 func ParseMultiSendData(data []byte) ([]InternalTxn, error) {
-	if functionSig, err := safeSlice(data, 0, 4); err != nil {
+	if functionSig, err := Slice(data, 0, 4); err != nil {
 		return nil, err
 	} else {
 		if common.Bytes2Hex(functionSig) != "8d80ff0a" {
@@ -64,7 +72,7 @@ func ParseMultiSendData(data []byte) ([]InternalTxn, error) {
 		}
 	}
 	var encodedLen *big.Int
-	if length, err := safeSlice(data, 36, 36+UINT256_SIZE); err != nil {
+	if length, err := Slice(data, 36, 36+UINT256_SIZE); err != nil {
 		return nil, err
 	} else {
 		encodedLen = new(big.Int).SetBytes(length)
@@ -93,6 +101,7 @@ func ParseMultiSendData(data []byte) ([]InternalTxn, error) {
 	}
 	return internalTransactions, err
 }
+
 func parseInternalTransaction(multiSendPacked []byte, baseOffset int) (InternalTxn, int, error) {
 	var operation []byte
 	var err error
@@ -129,17 +138,48 @@ func parseInternalTransaction(multiSendPacked []byte, baseOffset int) (InternalT
 	}
 	return internalTxn, baseOffset, nil
 }
-func safeSlice[T any](slice []T, from int, to int) ([]T, error) {
+
+func Slice[T any](slice []T, from int, to int) ([]T, error) {
 	if from > len(slice) || to > len(slice) || from < 0 || to < 0 || from > to {
-		return nil, errors.New("invalid range")
+		return nil, ErrInvalidRange
 	}
 	return slice[from:to], nil
 }
 
 func readNAndShift[T any](data []T, baseOffset int, n int) ([]T, int, error) {
-	if subData, err := safeSlice(data, baseOffset, baseOffset+n); err != nil {
+	if subData, err := Slice(data, baseOffset, baseOffset+n); err != nil {
 		return nil, baseOffset, err
 	} else {
 		return subData, baseOffset + n, nil
 	}
+}
+
+// GetTypedDataHash returns the hash of the fully encoded eip-712 %%value%% for %%types%% with %%domain%%.
+// https://github.com/ethers-io/ethers.js/blob/c5cb7cd71d9a12b8feeec4fd956d0a416b0be32f/src.ts/hash/typed-data.ts#L491
+func GetTypedDataHash(typedData apitypes.TypedData) (common.Hash, error) {
+	// EIP-712 typed data marshalling
+	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("eip712domain hash struct: %w", err)
+	}
+	typedDataHash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("primary type hash struct: %w", err)
+	}
+
+	// add magic string prefix
+	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typedDataHash)))
+	return common.BytesToHash(crypto.Keccak256(rawData)), nil
+}
+
+// GetMessageHash gets EIP-191 personal-sign message digest to sign
+// https://github.com/ethers-io/ethers.js/blob/c5cb7cd71d9a12b8feeec4fd956d0a416b0be32f/src.ts/hash/message.ts#L35-L36
+func GetMessageHash(message string) common.Hash {
+	return common.BytesToHash(
+		crypto.Keccak256(
+			[]byte(fmt.Sprintf(
+				"\x19Ethereum Signed Message:\n%d%s", len(message), message,
+			)),
+		),
+	)
 }
