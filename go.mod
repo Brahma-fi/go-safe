@@ -9,6 +9,8 @@ require (
 	github.com/Brahma-fi/console-transaction-builder v0.5.0
 	github.com/ethereum/go-ethereum v1.13.4
 	github.com/go-resty/resty/v2 v2.10.0
+	github.com/goccy/go-json v0.10.2
+	github.com/rs/zerolog v1.30.0
 	github.com/stretchr/testify v1.8.4
 )
 
@@ -66,7 +68,6 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
-	github.com/rs/zerolog v1.30.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/status-im/keycard-go v0.3.2 // indirect
 	github.com/supranational/blst v0.3.11 // indirect
