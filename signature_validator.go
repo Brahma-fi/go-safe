@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/goccy/go-json"
-	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -94,7 +93,6 @@ func getPublicKeyAndCheckWalletAddress(hashedText, sig []byte, eoa string) ([]by
 	}
 
 	var recoveredAddr = crypto.PubkeyToAddress(*pubKey)
-	log.Debug().Msgf("EOA %v - %v RecoveredAddress", common.HexToAddress(eoa).Hex(), recoveredAddr.Hex())
 
 	if subtle.ConstantTimeCompare(common.HexToAddress(eoa).Bytes(), recoveredAddr.Bytes()) == 0 {
 		return nil, ErrVerifySigner
