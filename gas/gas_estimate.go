@@ -77,8 +77,9 @@ type Estimation struct {
 	clientFactory   ethClientFactory
 	addressRegistry addressRegistry
 
-	safeAbi    *abi.ABI
-	clientURLs map[int64]string // map[chainID]ethRpcURL
+	safeAbi     *abi.ABI
+	accessorAbi *abi.ABI
+	clientURLs  map[int64]string // map[chainID]ethRpcURL
 }
 
 func NewGasEstimation(
@@ -86,12 +87,14 @@ func NewGasEstimation(
 	addRegistry addressRegistry,
 
 	safeAbi *abi.ABI,
+	accessorAbi *abi.ABI,
 	clientURLs map[int64]string,
 ) *Estimation {
 	return &Estimation{
 		clientFactory:   clientFactory,
 		addressRegistry: addRegistry,
 		safeAbi:         safeAbi,
+		accessorAbi:     accessorAbi,
 		clientURLs:      clientURLs,
 	}
 }
@@ -194,7 +197,7 @@ func (g *Estimation) EstimateSafeGasv1_4_0(_ context.Context, safeTxn *types.Saf
 
 	safeAddress := safeTxn.Safe.Address()
 	// see https://github.com/safe-global/safe-contracts/blob/7a77545f288361893313af23194988731ee95261/test/accessors/SimulateTxAccessor.spec.ts#L70
-	encoded, err := g.safeAbi.Pack(
+	encoded, err := g.accessorAbi.Pack(
 		"simulate",
 		safeTxn.To.Address(), (*big.Int)(&safeTxn.Value), ([]byte)(*safeTxn.Data),
 		safeTxn.Operation,
@@ -267,7 +270,7 @@ func (g *Estimation) EstimateSafeGas(ctx context.Context, safeTxn *types.SafeTx)
 	switch version {
 	case "1.3.0":
 		return g.EstimateSafeGasv1_3_0(ctx, safeTxn)
-	case "1.4.0":
+	case "1.4.0", "1.4.1":
 		return g.EstimateSafeGasv1_4_0(ctx, safeTxn)
 	}
 	return 0, errors.New("invalid safe version")

@@ -6,7 +6,7 @@ toolchain go1.21.0
 
 require (
 	github.com/Brahma-fi/console-libs v1.10.2
-	github.com/Brahma-fi/console-transaction-builder v0.5.0
+	github.com/Brahma-fi/console-transaction-builder v0.7.3-0.20231203191325-f54d0d3a29d0
 	github.com/ethereum/go-ethereum v1.13.4
 	github.com/go-resty/resty/v2 v2.10.0
 	github.com/goccy/go-json v0.10.2
