@@ -44,3 +44,14 @@ type SafeMultiSigEvent struct {
 	SafeMultiSigInput
 	AdditionalInfo hexutil.Bytes `json:"additionalInfo"`
 }
+
+type Metadata struct {
+	Version               string           `json:"version"`
+	SafeAddress           common.Address   `json:"safeAddress"`
+	Owners                []common.Address `json:"owners"`
+	Threshold             uint64           `json:"threshold"`
+	Nonce                 uint64           `json:"nonce"`
+	IsConsole             bool             `json:"isConsole"`
+	ModeratedAccountOwner common.Address   `json:"ModeratedAccountOwner"`
+	GuardAddress          common.Address   `json:"-"`
+}
