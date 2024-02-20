@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	SafeBufferLimit = 0.1
+	SafeBufferLimit = 0.3
 )
 
 var (
