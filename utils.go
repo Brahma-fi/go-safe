@@ -141,7 +141,7 @@ func parseInternalTransaction(multiSendPacked []byte, baseOffset int) (InternalT
 }
 
 func Slice[T any](slice []T, from int, to int) ([]T, error) {
-	if from > len(slice) || to > len(slice) || from < 0 || to < 0 || from > to {
+	if from > len(slice) || to > len(slice)+1 || from < 0 || to < 0 || from > to {
 		return nil, ErrInvalidRange
 	}
 	return slice[from:to], nil

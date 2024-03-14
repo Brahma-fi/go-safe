@@ -1,7 +1,5 @@
 github.com/Brahma-fi/console-libs v1.10.2 h1:95/xGt46l4q0jnSCqxO7DjzgPSb40p2Wx0uRHFWBOIU=
 github.com/Brahma-fi/console-libs v1.10.2/go.mod h1:XcXMdbaf2gCMRM/VRlPqWtaYltVGYmstPljq+TzO+l0=
-github.com/Brahma-fi/console-transaction-builder v0.5.0 h1:jF83X6U9xIMfckQqimV50ITvCKtlF9YaXjDIAHLTKWE=
-github.com/Brahma-fi/console-transaction-builder v0.5.0/go.mod h1:f8M+tos4Wo4niwMqqjVvafYEAh21JSlFlu80uVWc2Y8=
 github.com/Brahma-fi/console-transaction-builder v0.7.3-0.20231203191325-f54d0d3a29d0 h1:iLkBaCLf+62Ypm45v760IrTM5UkmQre/htBg9hclx1c=
 github.com/Brahma-fi/console-transaction-builder v0.7.3-0.20231203191325-f54d0d3a29d0/go.mod h1:tTqgbO7IblD3GYX3l0/8Kk9iFsSbCClXQteBMGYS6Ts=
 github.com/DataDog/zstd v1.5.5 h1:oWf5W7GtOLgp6bciQYDmhHHjdhYkALu6S/5Ni9ZgSvQ=
