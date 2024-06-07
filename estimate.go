@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	DefaultMaxGasLimit   = uint64(2000000)
+	DefaultMaxGasLimit   = uint64(6400000)
 	MaxBinarySearchDepth = 10000
 )
 
