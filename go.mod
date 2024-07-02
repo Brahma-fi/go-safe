@@ -3,7 +3,7 @@ module github.com/Brahma-fi/go-safe
 go 1.22.2
 
 require (
-	github.com/Brahma-fi/console-libs v1.27.1
+	github.com/Brahma-fi/console-libs v1.27.3
 	github.com/Brahma-fi/console-transaction-builder/addresses v0.1.0
 	github.com/Brahma-fi/console-transaction-builder/contracts v0.1.0
 	github.com/Brahma-fi/console-transaction-builder/types v0.2.0
@@ -57,7 +57,6 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/peterh/liner v1.2.2 // indirect
