@@ -1,6 +1,7 @@
 package safe
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"strings"
@@ -8,8 +9,8 @@ import (
 	"github.com/Brahma-fi/console-transaction-builder/contracts/safe"
 	builder "github.com/Brahma-fi/console-transaction-builder/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/signer/core"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
@@ -17,17 +18,17 @@ import (
 )
 
 func GetSignedSafeTxn(safeTxn *core.GnosisSafeTx, signatures [][]byte) error {
-	//create new builder for solidityPack call
-	builder := NewPackBuilder()
+	//create new packer for solidityPack call
+	packer := NewPackBuilder()
 	for _, signature := range signatures {
 		//add all individual signatures
-		err := builder.AddBytes(signature)
+		err := packer.AddBytes(signature)
 		if err != nil {
 			return err
 		}
 	}
 	//pack it !!!
-	packedSignature, err := builder.Pack()
+	packedSignature, err := packer.Pack()
 	if err != nil {
 		return err
 	}
@@ -68,27 +69,27 @@ func GetEncodedExecTransaction(safeTxn *core.GnosisSafeTx, abi *abi.ABI) ([]byte
 
 // GetApprovedHashSafeTxn see https://github.com/safe-global/safe-contracts/blob/main/contracts/Safe.sol#L317
 func GetApprovedHashSafeTxn(safeTxn *core.GnosisSafeTx, owner common.Address) error {
-	builder := NewPackBuilder()
+	packer := NewPackBuilder()
 	// The signature format is a compact form of:
 	//   {bytes32 r}{bytes32 s}{uint8 v}
 	// Compact means, uint8 is not padded to 32 bytes.
 	// r bytes32
-	err := builder.AddBytes(AddressToBytes32(owner))
+	err := packer.AddBytes(AddressToBytes32(owner))
 	if err != nil {
 		return err
 	}
 	// s bytes32
-	err = builder.AddBytes(make([]byte, 32))
+	err = packer.AddBytes(make([]byte, 32))
 	if err != nil {
 		return err
 	}
 	// v uint8
-	err = builder.AddUint8(1)
+	err = packer.AddUint8(1)
 	if err != nil {
 		return err
 	}
 	//pack it !!!
-	packedSignature, err := builder.Pack()
+	packedSignature, err := packer.Pack()
 	if err != nil {
 		return err
 	}
@@ -97,7 +98,7 @@ func GetApprovedHashSafeTxn(safeTxn *core.GnosisSafeTx, owner common.Address) er
 }
 
 func PackTransactions(request *SafeMultiSendRequest) ([]byte, *big.Int, error) {
-	builder := NewPackBuilder()
+	packer := NewPackBuilder()
 	totalValue := new(big.Int).SetInt64(0)
 	for _, txn := range request.Transactions {
 		callData := common.Hex2Bytes(txn.CallData())
@@ -105,13 +106,13 @@ func PackTransactions(request *SafeMultiSendRequest) ([]byte, *big.Int, error) {
 		if err != nil {
 			return nil, nil, err
 		}
-		err = builder.AddBytes(rawTransaction)
+		err = packer.AddBytes(rawTransaction)
 		if err != nil {
 			return nil, nil, err
 		}
 		totalValue.And(totalValue, txn.Value())
 	}
-	packed, err := builder.Pack()
+	packed, err := packer.Pack()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -119,28 +120,28 @@ func PackTransactions(request *SafeMultiSendRequest) ([]byte, *big.Int, error) {
 }
 
 func PackTxn(operation uint8, toAddress common.Address, value *big.Int, callData []byte) ([]byte, error) {
-	builder := NewPackBuilder()
-	err := builder.AddUint8(operation)
+	packer := NewPackBuilder()
+	err := packer.AddUint8(operation)
 	if err != nil {
 		return nil, err
 	}
-	err = builder.AddAddress(toAddress)
+	err = packer.AddAddress(toAddress)
 	if err != nil {
 		return nil, err
 	}
-	err = builder.AddUint256(value)
+	err = packer.AddUint256(value)
 	if err != nil {
 		return nil, err
 	}
-	err = builder.AddUint256(new(big.Int).SetInt64(int64(len(callData))))
+	err = packer.AddUint256(new(big.Int).SetInt64(int64(len(callData))))
 	if err != nil {
 		return nil, err
 	}
-	err = builder.AddBytes(callData)
+	err = packer.AddBytes(callData)
 	if err != nil {
 		return nil, err
 	}
-	return builder.Pack()
+	return packer.Pack()
 }
 
 func GetEncodedMultiSendTransaction(callData []byte, abi *abi.ABI) ([]byte, error) {
@@ -175,42 +176,58 @@ func GetModuleTransaction(callData []byte, to common.Address, value *big.Int, op
 	return safeAbi.Pack("execTransactionFromModule", to, value, callData, operation)
 }
 
-// TODO:MULTISIG better to convert into struct that inherits these functions. Move it go-safe
-func GetSafeNonce(client *ethclient.Client, safeAddress common.Address) (*big.Int, error) {
-	userSafe, err := safe.NewSafe(safeAddress, client)
+func GetSafeNonce(ctx context.Context, client bind.ContractCaller, safeAddress common.Address) (*big.Int, error) {
+	userSafe, err := safe.NewSafeCaller(safeAddress, client)
 	if err != nil {
 		return nil, err
 	}
-	return userSafe.Nonce(nil)
+	return userSafe.Nonce(&bind.CallOpts{
+		Context: ctx,
+	})
 }
 
-func IsValidOwner(client *ethclient.Client, safeAddress common.Address, owner common.Address) (bool, error) {
-	userSafe, err := safe.NewSafe(safeAddress, client)
+func IsValidOwner(
+	ctx context.Context,
+	client bind.ContractCaller,
+	safeAddress common.Address,
+	owner common.Address,
+) (bool, error) {
+	userSafe, err := safe.NewSafeCaller(safeAddress, client)
 	if err != nil {
 		return false, err
 	}
-	return userSafe.IsOwner(nil, owner)
+	return userSafe.IsOwner(&bind.CallOpts{Context: ctx}, owner)
 }
 
-func GetThreshold(client *ethclient.Client, safeAddress common.Address) (*big.Int, error) {
-	userSafe, err := safe.NewSafe(safeAddress, client)
+func GetThreshold(
+	ctx context.Context,
+	client bind.ContractCaller,
+	safeAddress common.Address,
+) (*big.Int, error) {
+	userSafe, err := safe.NewSafeCaller(safeAddress, client)
 	if err != nil {
 		return nil, err
 	}
-	return userSafe.GetThreshold(nil)
+	return userSafe.GetThreshold(&bind.CallOpts{
+		Context: ctx,
+	})
 }
 
-func GetTransactionHash(client *ethclient.Client, safeAddress common.Address, txn *builder.SafeTx) (
+func GetTransactionHash(
+	ctx context.Context,
+	client bind.ContractCaller,
+	safeAddress common.Address, txn *builder.SafeTx,
+) (
 	common.Hash, error,
 ) {
-	userSafe, err := safe.NewSafe(safeAddress, client)
+	userSafe, err := safe.NewSafeCaller(safeAddress, client)
 	if err != nil {
 		return common.HexToHash(""), err
 	}
 
 	// GetTransactionHash(opts *bind.CallOpts, to common.Address, value *big.Int, data []byte, operation uint8, safeTxGas *big.Int, baseGas *big.Int, gasPrice *big.Int, gasToken common.Address, refundReceiver common.Address, _nonce *big.Int)
 	txnHash, err := userSafe.GetTransactionHash(
-		nil, txn.To.Address(), (*big.Int)(&txn.Value), ([]byte)(*txn.Data), txn.Operation, &txn.SafeTxGas, &txn.BaseGas,
+		&bind.CallOpts{Context: ctx}, txn.To.Address(), (*big.Int)(&txn.Value), ([]byte)(*txn.Data), txn.Operation, &txn.SafeTxGas, &txn.BaseGas,
 		(*big.Int)(&txn.GasPrice), txn.GasToken, txn.RefundReceiver, &txn.Nonce,
 	)
 	if err != nil {
