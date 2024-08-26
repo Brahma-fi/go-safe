@@ -2,10 +2,9 @@ name: Brahma GO-SAFE CI
 
 on:
   pull_request:
+    paths-ignore: [ README.md, .github/workflows/*.yml ]
     branches:
         - '*'
-  push:
-    paths-ignore: [ README.md, .github/workflows/*.yml ]
 
 jobs:
   CI:
