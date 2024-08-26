@@ -3,7 +3,6 @@
 GOBIN          = $(PWD)/.bin
 GO 		       = go
 
-path :=$(if $(path), $(path), "./")
 service_name=go-safe
 
 .PHONY: help
@@ -33,7 +32,7 @@ test: ## - execute go test command
 scan: ## - execute GOSEC static code analysis
 	@ gosec -fmt=sarif -out=$(service_name).sarif -exclude-dir=test -exclude-dir=bin -severity=medium ./... | 2>&1
 	@ echo ""
-	@ cat $(path)/$(service_name).sarif
+	@ cat ./$(service_name).sarif
 
 test-coverage: ## - execute go test command with coverage
 	@ mkdir -p .coverage && mkdir -p .report
