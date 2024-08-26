@@ -1,7 +1,5 @@
 github.com/Brahma-fi/console-libs v1.10.2 h1:95/xGt46l4q0jnSCqxO7DjzgPSb40p2Wx0uRHFWBOIU=
 github.com/Brahma-fi/console-libs v1.10.2/go.mod h1:XcXMdbaf2gCMRM/VRlPqWtaYltVGYmstPljq+TzO+l0=
-github.com/Brahma-fi/console-transaction-builder v0.5.0 h1:jF83X6U9xIMfckQqimV50ITvCKtlF9YaXjDIAHLTKWE=
-github.com/Brahma-fi/console-transaction-builder v0.5.0/go.mod h1:f8M+tos4Wo4niwMqqjVvafYEAh21JSlFlu80uVWc2Y8=
 github.com/Brahma-fi/console-transaction-builder v0.7.3-0.20231203191325-f54d0d3a29d0 h1:iLkBaCLf+62Ypm45v760IrTM5UkmQre/htBg9hclx1c=
 github.com/Brahma-fi/console-transaction-builder v0.7.3-0.20231203191325-f54d0d3a29d0/go.mod h1:tTqgbO7IblD3GYX3l0/8Kk9iFsSbCClXQteBMGYS6Ts=
 github.com/DataDog/zstd v1.5.5 h1:oWf5W7GtOLgp6bciQYDmhHHjdhYkALu6S/5Ni9ZgSvQ=
@@ -78,8 +76,8 @@ github.com/go-errors/errors v1.4.2/go.mod h1:sIVyrIiJhuEF+Pj9Ebtd6P/rEYROXFi3Bop
 github.com/go-ole/go-ole v1.2.6/go.mod h1:pprOEPIfldk/42T2oK7lQ4v4JSDwmV0As9GaiUsvbm0=
 github.com/go-ole/go-ole v1.3.0 h1:Dt6ye7+vXGIKZ7Xtk4s6/xVdGDQynvom7xCFEdWr6uE=
 github.com/go-ole/go-ole v1.3.0/go.mod h1:5LS6F96DhAwUc7C+1HLexzMXY1xGRSryjyPPKW6zv78=
-github.com/go-resty/resty/v2 v2.10.0 h1:Qla4W/+TMmv0fOeeRqzEpXPLfTUnR5HZ1+lGs+CkiCo=
-github.com/go-resty/resty/v2 v2.10.0/go.mod h1:iiP/OpA0CkcL3IGt1O0+/SIItFUbkkyw5BGXiVdTu+A=
+github.com/go-resty/resty/v2 v2.11.0 h1:i7jMfNOJYMp69lq7qozJP+bjgzfAzeOhuGlyDrqxT/8=
+github.com/go-resty/resty/v2 v2.11.0/go.mod h1:iiP/OpA0CkcL3IGt1O0+/SIItFUbkkyw5BGXiVdTu+A=
 github.com/go-stack/stack v1.8.1 h1:ntEHSVwIt7PNXNpgPmVfMrNhLtgjlmnZha2kOpuRiDw=
 github.com/go-stack/stack v1.8.1/go.mod h1:dcoOX6HbPZSZptuspn9bctJ+N/CnF5gGygcUP3XYfe4=
 github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0/go.mod h1:fyg7847qk6SyHyPtNmDHnmrv/HOrqktSC+C9fM+CJOE=
