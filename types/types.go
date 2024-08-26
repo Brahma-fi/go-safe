@@ -1,11 +1,31 @@
-package safe
+package types
 
 import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common/math"
 )
+
+// SafeTx is derived from the core.GnosisSafeTx type and does not include the output
+// fields which makes easy for the marshalling and unmarshalling
+type SafeTx struct {
+	// These fields are used both on input and output
+	Safe           common.MixedcaseAddress `json:"safe"`
+	To             common.MixedcaseAddress `json:"to"`
+	Value          math.Decimal256         `json:"value"`
+	GasPrice       math.Decimal256         `json:"gasPrice"`
+	Data           *hexutil.Bytes          `json:"data"`
+	Operation      uint8                   `json:"operation"`
+	GasToken       common.Address          `json:"gasToken"`
+	RefundReceiver common.Address          `json:"refundReceiver"`
+	BaseGas        big.Int                 `json:"baseGas"`
+	SafeTxGas      big.Int                 `json:"safeTxGas"`
+	Nonce          big.Int                 `json:"nonce"`
+	InputExpHash   common.Hash             `json:"safeTxHash,omitempty"`
+	ChainId        *math.HexOrDecimal256   `json:"chainId,omitempty"`
+}
 
 type SafeMultiSendRequest struct {
 	Transactions []Transaction  `json:"transactions"`
