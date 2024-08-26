@@ -1,0 +1,35 @@
+name: Brahma GO-SAFE CI
+
+on:
+  pull_request:
+    branches:
+        - '*'
+  push:
+    paths-ignore: [ README.md, .github/workflows/*.yml ]
+
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    name: Continuous Integration
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Golang caches
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Build
+        id: Build
+        run: make build
+
+      - name: Test
+        id: Test
+        run: make test
+
+      - name: Scan
+        id: Scan
+        run: make scan

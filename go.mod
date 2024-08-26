@@ -6,7 +6,7 @@ toolchain go1.21.0
 
 require (
 	github.com/ethereum/go-ethereum v1.13.4
-	github.com/go-resty/resty/v2 v2.10.0
+	github.com/go-resty/resty/v2 v2.11.0
 	github.com/goccy/go-json v0.10.2
 	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.8.4
