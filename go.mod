@@ -5,12 +5,10 @@ go 1.21
 toolchain go1.21.0
 
 require (
-	github.com/Brahma-fi/console-libs v1.10.2
-	github.com/Brahma-fi/console-transaction-builder v0.7.3-0.20231203191325-f54d0d3a29d0
 	github.com/ethereum/go-ethereum v1.13.4
 	github.com/go-resty/resty/v2 v2.10.0
 	github.com/goccy/go-json v0.10.2
-	github.com/rs/zerolog v1.30.0
+	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.8.4
 )
 
@@ -57,6 +55,7 @@ require (
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/peterh/liner v1.2.2 // indirect
