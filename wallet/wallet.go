@@ -1,4 +1,4 @@
-package safe
+package wallet
 
 import (
 	"bytes"
@@ -6,7 +6,8 @@ import (
 	"crypto/subtle"
 	"errors"
 
-	"github.com/Brahma-fi/console-transaction-builder/types"
+	"github.com/Brahma-fi/go-safe/types"
+	"github.com/Brahma-fi/go-safe/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -40,7 +41,7 @@ func VerifyTypedDataSignature(eoa, sigHex string, request apitypes.TypedData) er
 		return err
 	}
 
-	sigHash, err := GetTypedDataHash(request)
+	sigHash, err := utils.GetTypedDataHash(request)
 	if err != nil {
 		return err
 	}
@@ -62,7 +63,7 @@ func VerifyPersonalSignSignature(eoa, sigHex, message string) error {
 	if err != nil {
 		return err
 	}
-	sigHash := GetMessageHash(message)
+	sigHash := utils.GetMessageHash(message)
 
 	sigPublicKey, err := getPublicKeyAndCheckWalletAddress(sigHash.Bytes(), sig, eoa)
 	if err != nil {

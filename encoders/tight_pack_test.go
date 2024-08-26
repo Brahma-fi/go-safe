@@ -1,4 +1,4 @@
-package safe
+package encoders
 
 import (
 	"math/big"

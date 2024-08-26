@@ -1,20 +1,18 @@
-package safe
+package encoders
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 	"strings"
 
-	"github.com/Brahma-fi/console-transaction-builder/contracts/safe"
-	builder "github.com/Brahma-fi/console-transaction-builder/types"
+	"github.com/Brahma-fi/go-safe/contracts/safe"
+	"github.com/Brahma-fi/go-safe/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/signer/core"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-
-	"github.com/Brahma-fi/go-safe/contracts/safe_vOneDotThreeBinding"
 )
 
 func GetSignedSafeTxn(safeTxn *core.GnosisSafeTx, signatures [][]byte) error {
@@ -97,7 +95,7 @@ func GetApprovedHashSafeTxn(safeTxn *core.GnosisSafeTx, owner common.Address) er
 	return nil
 }
 
-func PackTransactions(request *SafeMultiSendRequest) ([]byte, *big.Int, error) {
+func PackTransactions(request *types.SafeMultiSendRequest) ([]byte, *big.Int, error) {
 	packer := NewPackBuilder()
 	totalValue := new(big.Int).SetInt64(0)
 	for _, txn := range request.Transactions {
@@ -167,71 +165,68 @@ func GetModuleTransaction(callData []byte, to common.Address, value *big.Int, op
 	   )
 	*/
 
-	parsedAbi, err := abi.JSON(strings.NewReader(safe_vOneDotThreeBinding.SafeVOneDotThreeBindingMetaData.ABI))
+	parsedAbi, err := abi.JSON(strings.NewReader(safe.SafeMetaData.ABI))
 	if err != nil {
-		fmt.Println("failed to parse gearboxAbi", err)
+		fmt.Println("failed to parse safe abi", err)
 		return nil, err
 	}
 	safeAbi := &parsedAbi
 	return safeAbi.Pack("execTransactionFromModule", to, value, callData, operation)
 }
 
-func GetSafeNonce(ctx context.Context, client bind.ContractCaller, safeAddress common.Address) (*big.Int, error) {
-	userSafe, err := safe.NewSafeCaller(safeAddress, client)
-	if err != nil {
-		return nil, err
+func ConstructGnosisSafeTx(request *types.SafeTx) *core.GnosisSafeTx {
+	return &core.GnosisSafeTx{
+		To:             request.To,
+		Value:          request.Value,
+		GasPrice:       request.GasPrice,
+		BaseGas:        request.BaseGas,
+		Data:           request.Data,
+		Operation:      request.Operation,
+		GasToken:       request.GasToken,
+		RefundReceiver: request.RefundReceiver,
+		SafeTxGas:      request.SafeTxGas,
+		Nonce:          request.Nonce,
+		ChainId:        request.ChainId,
 	}
-	return userSafe.Nonce(&bind.CallOpts{
-		Context: ctx,
-	})
 }
 
-func IsValidOwner(
-	ctx context.Context,
-	client bind.ContractCaller,
-	safeAddress common.Address,
-	owner common.Address,
-) (bool, error) {
-	userSafe, err := safe.NewSafeCaller(safeAddress, client)
-	if err != nil {
-		return false, err
+func GetEncodedSafeTx(
+	safe common.Address,
+	safeMultiSendAddress common.Address,
+	safeMultiSendAbi *abi.ABI,
+	transactions []types.Transaction,
+	chainId int64,
+) (*types.SafeTx, error) {
+	if len(transactions) < 2 {
+		callData := common.Hex2Bytes(transactions[0].CallData())
+		return &types.SafeTx{
+			Operation: transactions[0].Operation(),
+			Safe:      common.NewMixedcaseAddress(safe),
+			To:        common.NewMixedcaseAddress(transactions[0].To()),
+			Value:     math.Decimal256(*transactions[0].Value()),
+			Data:      (*hexutil.Bytes)(&callData),
+		}, nil
 	}
-	return userSafe.IsOwner(&bind.CallOpts{Context: ctx}, owner)
-}
-
-func GetThreshold(
-	ctx context.Context,
-	client bind.ContractCaller,
-	safeAddress common.Address,
-) (*big.Int, error) {
-	userSafe, err := safe.NewSafeCaller(safeAddress, client)
-	if err != nil {
-		return nil, err
-	}
-	return userSafe.GetThreshold(&bind.CallOpts{
-		Context: ctx,
-	})
-}
-
-func GetTransactionHash(
-	ctx context.Context,
-	client bind.ContractCaller,
-	safeAddress common.Address, txn *builder.SafeTx,
-) (
-	common.Hash, error,
-) {
-	userSafe, err := safe.NewSafeCaller(safeAddress, client)
-	if err != nil {
-		return common.HexToHash(""), err
-	}
-
-	// GetTransactionHash(opts *bind.CallOpts, to common.Address, value *big.Int, data []byte, operation uint8, safeTxGas *big.Int, baseGas *big.Int, gasPrice *big.Int, gasToken common.Address, refundReceiver common.Address, _nonce *big.Int)
-	txnHash, err := userSafe.GetTransactionHash(
-		&bind.CallOpts{Context: ctx}, txn.To.Address(), (*big.Int)(&txn.Value), ([]byte)(*txn.Data), txn.Operation, &txn.SafeTxGas, &txn.BaseGas,
-		(*big.Int)(&txn.GasPrice), txn.GasToken, txn.RefundReceiver, &txn.Nonce,
+	packedTransactions, value, err := PackTransactions(
+		&types.SafeMultiSendRequest{
+			Transactions: transactions,
+			ChainId:      chainId,
+			From:         safe,
+		},
 	)
 	if err != nil {
-		return common.HexToHash(""), err
+		return nil, err
 	}
-	return txnHash, nil
+	callData, err := GetEncodedMultiSendTransaction(packedTransactions, safeMultiSendAbi)
+	if err != nil {
+		return nil, err
+	}
+	return &types.SafeTx{
+		// delegatecall
+		Operation: uint8(1),
+		Safe:      common.NewMixedcaseAddress(safe),
+		To:        common.NewMixedcaseAddress(safeMultiSendAddress),
+		Value:     math.Decimal256(*value),
+		Data:      (*hexutil.Bytes)(&callData),
+	}, nil
 }

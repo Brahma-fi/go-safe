@@ -8,14 +8,17 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Brahma-fi/console-transaction-builder/addresses"
-	"github.com/Brahma-fi/console-transaction-builder/contracts/multicall3"
-	safeBinding "github.com/Brahma-fi/console-transaction-builder/contracts/safe"
-	walletRegistryBinding "github.com/Brahma-fi/console-transaction-builder/contracts/walletRegistry"
-	types "github.com/Brahma-fi/go-safe"
+	"github.com/Brahma-fi/go-safe/contracts/multicall"
+	"github.com/Brahma-fi/go-safe/contracts/safe"
+	"github.com/Brahma-fi/go-safe/contracts/walletregistry"
+	"github.com/Brahma-fi/go-safe/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
+)
+
+const (
+	WalletRegistryAddress = "walletRegistryAddress"
 )
 
 var (
@@ -36,12 +39,12 @@ func NewSafeMetadataService(
 	mc multiCaller,
 ) (*SafeMetadataService, error) {
 
-	walletRegistryAbi, err := abi.JSON(strings.NewReader(walletRegistryBinding.WalletRegistryBindingMetaData.ABI))
+	walletRegistryAbi, err := abi.JSON(strings.NewReader(walletregistry.WalletregistryMetaData.ABI))
 	if err != nil {
 		return nil, err
 	}
 
-	safeAbi, err := abi.JSON(strings.NewReader(safeBinding.SafeMetaData.ABI))
+	safeAbi, err := abi.JSON(strings.NewReader(safe.SafeMetaData.ABI))
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +63,7 @@ func (s *SafeMetadataService) GetSafeMetadata(
 	safes []common.Address,
 	chainID int64,
 ) ([]types.Metadata, error) {
-	var multiCalls []multicall3.Multicall3Call3
+	var multiCalls []multicall.Multicall3Call3
 
 	getOwnersCallData, err := s.safeAbi.Pack("getOwners")
 	if err != nil {
@@ -94,7 +97,7 @@ func (s *SafeMetadataService) GetSafeMetadata(
 		return nil, err
 	}
 
-	walletRegistry, err := addressProvider.GetAddress(addresses.WalletRegistryAddress)
+	walletRegistry, err := addressProvider.GetAddress(WalletRegistryAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -113,31 +116,31 @@ func (s *SafeMetadataService) GetSafeMetadata(
 		}
 
 		multiCalls = append(
-			multiCalls, multicall3.Multicall3Call3{
+			multiCalls, multicall.Multicall3Call3{
 				Target:       safe,
 				AllowFailure: true,
 				CallData:     getOwnersCallData,
-			}, multicall3.Multicall3Call3{
+			}, multicall.Multicall3Call3{
 				Target:       safe,
 				AllowFailure: true,
 				CallData:     getThresholdCallData,
-			}, multicall3.Multicall3Call3{
+			}, multicall.Multicall3Call3{
 				Target:       safe,
 				AllowFailure: true,
 				CallData:     getNonceCallData,
-			}, multicall3.Multicall3Call3{
+			}, multicall.Multicall3Call3{
 				Target:       walletRegistry,
 				AllowFailure: true,
 				CallData:     isWalletRegisteredCallData,
-			}, multicall3.Multicall3Call3{
+			}, multicall.Multicall3Call3{
 				Target:       walletRegistry,
 				AllowFailure: true,
 				CallData:     moderatedAccountOwner,
-			}, multicall3.Multicall3Call3{
+			}, multicall.Multicall3Call3{
 				Target:       safe,
 				AllowFailure: true,
 				CallData:     getGuardCallData,
-			}, multicall3.Multicall3Call3{
+			}, multicall.Multicall3Call3{
 				Target:       safe,
 				AllowFailure: true,
 				CallData:     getVersionCallData,
