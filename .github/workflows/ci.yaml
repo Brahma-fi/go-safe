@@ -27,7 +27,6 @@ jobs:
       - name: Lint
         id: Lint
         uses: golangci/golangci-lint-action@v6.1.0
-        run: make lint
       - name: Test
         id: Test
         run: make test
