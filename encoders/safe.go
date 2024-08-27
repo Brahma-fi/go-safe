@@ -34,13 +34,13 @@ func GetSignedSafeTxn(safeTxn *core.GnosisSafeTx, signatures [][]byte) error {
 	return nil
 }
 
-func GetSafeSignatureDomainHash(safeTxn *core.GnosisSafeTx) ([]byte, error) {
+func GetSafeSignatureHash(safeTxn *core.GnosisSafeTx) ([]byte, error) {
 	typedData := safeTxn.ToTypedData()
-	domainHash, _, err := apitypes.TypedDataAndHash(typedData)
+	typedHash, _, err := apitypes.TypedDataAndHash(typedData)
 	if err != nil {
 		return nil, err
 	}
-	return domainHash, nil
+	return typedHash, nil
 }
 
 func GetEncodedExecTransaction(safeTxn *core.GnosisSafeTx, abi *abi.ABI) ([]byte, error) {
