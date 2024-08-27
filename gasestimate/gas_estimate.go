@@ -107,6 +107,8 @@ func NewGasEstimation(
 // EstimateSafeGasv1_3_0 this estimates the max gas limit that should be given in form of safeTxGas and is compatible
 // with safe version 1.3.0
 // see https://github.com/safe-global/safe-core-sdk/blob/7959821ab08c96cf3babb9ed906c01d644ac49f4/packages/protocol-kit/src/utils/transactions/gas.ts#L17
+//
+//nolint:lll
 func (g *Estimation) EstimateSafeGasv1_3_0(ctx context.Context, safeTxn *types.SafeTx) (uint64, error) {
 	chainID := (*big.Int)(safeTxn.ChainId).Int64()
 
@@ -204,6 +206,7 @@ func (g *Estimation) EstimateSafeGasv1_4_0(_ context.Context, safeTxn *types.Saf
 	}
 
 	safeAddress := safeTxn.Safe.Address()
+	//nolint:lll
 	// see https://github.com/safe-global/safe-contracts/blob/7a77545f288361893313af23194988731ee95261/test/accessors/SimulateTxAccessor.spec.ts#L70
 	encoded, err := g.accessorAbi.Pack(
 		"simulate",
@@ -215,6 +218,7 @@ func (g *Estimation) EstimateSafeGasv1_4_0(_ context.Context, safeTxn *types.Saf
 	}
 
 	simMixedCaseAddress := common.NewMixedcaseAddress(simAddress)
+	//nolint:lll
 	// see https://github.com/safe-global/safe-contracts/blob/7a77545f288361893313af23194988731ee95261/contracts/common/StorageAccessible.sol#L40
 	simulateAndRevert, err := g.safeAbi.Pack(
 		"simulateAndRevert",
@@ -258,7 +262,7 @@ func (g *Estimation) EstimateSafeGasv1_4_0(_ context.Context, safeTxn *types.Saf
 }
 
 // EstimateSafeGas this estimates the max gas limit that should be given in form of safeTxGas
-// it selects the appropriate function accroding to the safe version
+// it selects the appropriate function according to the safe version
 func (g *Estimation) EstimateSafeGas(ctx context.Context, safeTxn *types.SafeTx) (uint64, error) {
 	chainID := (*big.Int)(safeTxn.ChainId).Int64()
 
@@ -292,13 +296,16 @@ func estimateDataGasCost(data []byte) (cost uint64) {
 			cost += 16
 		}
 	}
-	return
+
+	return cost
 }
 
 // this client calls the rpc using the resty client
 // this is done because the client.ethClient and rpc.Client throw errors using error.message
 // this does not return the data given in Error object which is used to recover the gasUsed from the safe
 // see https://github.com/safe-global/safe-contracts/blob/186a21a74b327f17fc41217a927dea7064f74604/contracts/GnosisSafe.sol#L315
+//
+//nolint:lll
 func (g *Estimation) rawEstimateGasCall(transaction ethTransaction, chainID int64) (string, error) {
 	rpcURL, err := g.getURL(chainID)
 	if err != nil {
@@ -322,6 +329,8 @@ func (g *Estimation) rawEstimateGasCall(transaction ethTransaction, chainID int6
 
 // similar to the above but this does eth_call with extra gas and gasPrice
 // see https://github.com/safe-global/safe-contracts/blob/186a21a74b327f17fc41217a927dea7064f74604/contracts/GnosisSafe.sol#L315
+//
+//nolint:lll
 func (g *Estimation) rawEthCall(transaction ethTransactionWithGas, chainID int64) (string, error) {
 	rpcURL, err := g.getURL(chainID)
 	if err != nil {

@@ -50,7 +50,6 @@ type InternalTxn struct {
 
 type SafeMultiSigInput struct {
 	InternalTxn    `mapstructure:",squash"`
-	Operation      uint8          `json:"operation"`
 	SafeTxGas      *big.Int       `json:"safeTxGas"`
 	BaseGas        *big.Int       `json:"baseGas"`
 	GasPrice       *big.Int       `json:"gasPrice"`

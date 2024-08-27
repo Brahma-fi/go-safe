@@ -59,10 +59,35 @@ func GetTransactionHash(
 		return common.HexToHash(""), err
 	}
 
-	// GetTransactionHash(opts *bind.CallOpts, to common.Address, value *big.Int, data []byte, operation uint8, safeTxGas *big.Int, baseGas *big.Int, gasPrice *big.Int, gasToken common.Address, refundReceiver common.Address, _nonce *big.Int)
+	/*
+		GetTransactionHash(
+			opts *bind.CallOpts,
+			to common.Address,
+			value *big.Int,
+			data []byte,
+			operation uint8,
+			safeTxGas *big.Int,
+			baseGas *big.Int,
+			gasPrice *big.Int,
+			gasToken common.Address,
+			refundReceiver common.Address,
+			_nonce *big.Int
+		)
+	*/
 	txnHash, err := userSafe.GetTransactionHash(
-		&bind.CallOpts{Context: ctx}, txn.To.Address(), (*big.Int)(&txn.Value), ([]byte)(*txn.Data), txn.Operation, &txn.SafeTxGas, &txn.BaseGas,
-		(*big.Int)(&txn.GasPrice), txn.GasToken, txn.RefundReceiver, &txn.Nonce,
+		&bind.CallOpts{
+			Context: ctx,
+		},
+		txn.To.Address(),
+		(*big.Int)(&txn.Value),
+		*txn.Data,
+		txn.Operation,
+		&txn.SafeTxGas,
+		&txn.BaseGas,
+		(*big.Int)(&txn.GasPrice),
+		txn.GasToken,
+		txn.RefundReceiver,
+		&txn.Nonce,
 	)
 	if err != nil {
 		return common.HexToHash(""), err

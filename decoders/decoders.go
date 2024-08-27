@@ -32,7 +32,7 @@ func ParseExecTransactionCallData(calldata []byte) (execCallData []byte, err err
 		// return the actual call data without the selector
 		return hexutil.Decode(fmt.Sprintf("0x%s", encodedCallData[selectorIndex+8:]))
 	}
-	encodedCallDataLength := []byte{}
+	var encodedCallDataLength []byte
 	encodedCallDataLength, err = hexutil.Decode(
 		fmt.Sprintf(
 			"0x%s", encodedCallData[selectorIndex-32:selectorIndex],
@@ -49,8 +49,8 @@ func ParseExecTransactionCallData(calldata []byte) (execCallData []byte, err err
 	encodedCallDataEndIndex := selectorIndex + int(callDataLength.Int64()*2)
 	if len(encodedCallData) < encodedCallDataEndIndex {
 		return nil, errors.New("parsed callDataLength is invalid")
-
 	}
+
 	// get the actual call data without the selector
 	return hexutil.Decode(
 		fmt.Sprintf(
@@ -88,7 +88,7 @@ func ParseMultiSendData(data []byte) ([]types.InternalTxn, error) {
 		if baseOffset >= len(multiSendPacked) {
 			break
 		}
-		internalTxn := types.InternalTxn{}
+		var internalTxn types.InternalTxn
 		internalTxn, baseOffset, err = parseInternalTransaction(multiSendPacked, baseOffset)
 		if err != nil {
 			return nil, err
