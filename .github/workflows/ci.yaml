@@ -24,7 +24,9 @@ jobs:
       - name: Build
         id: Build
         run: make build
-
+      - name: Lint
+        id: Lint
+        run: make lint
       - name: Test
         id: Test
         run: make test
