@@ -11,6 +11,7 @@ import (
 	"github.com/Brahma-fi/go-safe/types"
 	"github.com/Brahma-fi/go-safe/utils"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -275,10 +276,12 @@ func (g *Estimation) EstimateSafeGas(ctx context.Context, safeTxn *types.SafeTx)
 	if err != nil {
 		return 0, err
 	}
-	version, err := userSafe.VERSION(nil)
+
+	version, err := userSafe.VERSION(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return 0, err
 	}
+
 	switch version {
 	case "1.3.0":
 		return g.EstimateSafeGasv1_3_0(ctx, safeTxn)
