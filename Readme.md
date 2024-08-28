@@ -43,6 +43,17 @@ encoders offer safe related encoding utils functions.
 - `GetEncodedExecTransaction`: encodes the give `core.GnosisSafeTx` into `execTransaction`
 - `TightPack`: TightPack is the go variant of `abi.encodePacked` [solidity function](https://docs.soliditylang.org/en/latest/abi-spec.html#non-standard-packed-mode) which is a non-standard packed mode.
  ```go
+import (  
+    "github.com/Brahma-fi/go-safe/encoders"  
+    "github.com/Brahma-fi/go-safe/types"  
+    "github.com/ethereum/go-ethereum/common"  
+    "github.com/ethereum/go-ethereum/core/types"  
+    "github.com/ethereum/go-ethereum/crypto"  
+    "github.com/ethereum/go-ethereum/rlp"  
+    "github.com/ethereum/go-ethereum/common/hexutil"  
+    "math/big"  
+)
+
 func TestNewPackBuilder() {  
     builder := NewPackBuilder()  
     val := new(big.Int).SetInt64(0)  
