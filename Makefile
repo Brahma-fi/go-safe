@@ -2,6 +2,9 @@
 
 GOBIN          = $(PWD)/.bin
 GO 		       = go
+LINT_VERSION   =1.51.1
+LINT_IMAGE     =golangci/golangci-lint:v${LINT_VERSION}-alpine
+LINT_FLAGS     =--timeout=10m0s
 
 service_name=go-safe
 
@@ -12,7 +15,9 @@ help: ## - Show this help message
 
 .PHONY: gen-abis
 gen-abis:
-	abigen --abi=./contracts/abis/safe_vOneDotThree.json --pkg=safe_vOneDotThreeBinding --out=contracts/safe_vOneDotThreeBinding/safe.go
+	abigen --abi=./contracts/abis/safe.json --pkg=safe --out=contracts/safe/safe.go
+	abigen --abi=./contracts/abis/wallet_registry.json --pkg=walletregistry --out=contracts/walletregistry/wallet_registry.go
+	abigen --abi=./contracts/abis/multicall3.json --pkg=multicall --out=contracts/multicall/multicall.go
 
 build: build-common ## - build
 	@ $(GO) build ./...
@@ -46,3 +51,16 @@ sonar-scan-local: test-coverage ## - start sonar qube locally with docker (you w
 .PHONY: sonar-stop
 sonar-stop: ## - stop sonar qube docker container
 	@ docker stop sonarqube
+
+.PHONY: ci-lint
+ci-lint: ## - runs golangci-lint
+	@ golangci-lint run -v ${LINT_FLAGS}
+
+.PHONY: ci-lint-docker
+ci-lint-docker: ## - runs golangci-lint with docker container
+	@ docker run --rm -v "$(shell pwd)":/app -w /app ${LINT_IMAGE} golangci-lint run ${LINT_FLAGS}
+
+.PHONY: lint
+lint: ## Run linters
+	$(info $(M) running linters...)
+	golangci-lint run --timeout 5m0s ./...

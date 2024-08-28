@@ -1,4 +1,4 @@
-package safe
+package gasestimate
 
 import (
 	"context"
@@ -36,6 +36,8 @@ type EstimateSafeTransactionClient interface {
 // And finds the optimal gas at which the transaction succeeds by checking the return of the eth_call
 // if encoded callData is execTransactionFromModule or execTransaction and call is successful safe returns (true) boolean as return
 // https://github.com/safe-global/safe-contracts/blob/1cfa95710057e33832600e6b9ad5ececca8f7839/contracts/SafeL2.sol#L12-L13
+//
+//nolint:lll
 func EstimateSafeTransactionGasLimit(
 	ctx context.Context, client EstimateSafeTransactionClient,
 	request EstimateSafeTransactionGasRequest,

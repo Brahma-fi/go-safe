@@ -8,14 +8,17 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Brahma-fi/console-transaction-builder/addresses"
-	"github.com/Brahma-fi/console-transaction-builder/contracts/multicall3"
-	safeBinding "github.com/Brahma-fi/console-transaction-builder/contracts/safe"
-	walletRegistryBinding "github.com/Brahma-fi/console-transaction-builder/contracts/walletRegistry"
-	types "github.com/Brahma-fi/go-safe"
+	"github.com/Brahma-fi/go-safe/contracts/multicall"
+	"github.com/Brahma-fi/go-safe/contracts/safe"
+	"github.com/Brahma-fi/go-safe/contracts/walletregistry"
+	"github.com/Brahma-fi/go-safe/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
+)
+
+const (
+	WalletRegistryAddress = "walletRegistryAddress"
 )
 
 var (
@@ -35,13 +38,12 @@ func NewSafeMetadataService(
 	addrRegistry addressRegistry,
 	mc multiCaller,
 ) (*SafeMetadataService, error) {
-
-	walletRegistryAbi, err := abi.JSON(strings.NewReader(walletRegistryBinding.WalletRegistryBindingMetaData.ABI))
+	walletRegistryAbi, err := abi.JSON(strings.NewReader(walletregistry.WalletregistryMetaData.ABI))
 	if err != nil {
 		return nil, err
 	}
 
-	safeAbi, err := abi.JSON(strings.NewReader(safeBinding.SafeMetaData.ABI))
+	safeAbi, err := abi.JSON(strings.NewReader(safe.SafeMetaData.ABI))
 	if err != nil {
 		return nil, err
 	}
@@ -55,12 +57,11 @@ func NewSafeMetadataService(
 	}, nil
 }
 
-func (s *SafeMetadataService) GetSafeMetadata(
-	ctx context.Context,
+func (s *SafeMetadataService) prepareSafeMulticall(
 	safes []common.Address,
-	chainID int64,
-) ([]types.Metadata, error) {
-	var multiCalls []multicall3.Multicall3Call3
+	walletRegistry common.Address,
+) ([]multicall.Multicall3Call3, error) {
+	var multiCalls []multicall.Multicall3Call3
 
 	getOwnersCallData, err := s.safeAbi.Pack("getOwners")
 	if err != nil {
@@ -82,19 +83,11 @@ func (s *SafeMetadataService) GetSafeMetadata(
 		return nil, err
 	}
 
-	guardStorageSlot := new(big.Int).SetBytes(common.HexToHash("0x4a204f620c8c5ccdca3fd54d003badd85ba500436a431f0cbda4f558c93c34c8").Bytes())
+	guardStorageSlot := new(big.Int).SetBytes(
+		common.HexToHash("0x4a204f620c8c5ccdca3fd54d003badd85ba500436a431f0cbda4f558c93c34c8").Bytes(),
+	)
 
 	getGuardCallData, err := s.safeAbi.Pack("getStorageAt", guardStorageSlot, new(big.Int).SetInt64(1))
-	if err != nil {
-		return nil, err
-	}
-
-	addressProvider, err := s.addressRegistry.AddressProvider(chainID)
-	if err != nil {
-		return nil, err
-	}
-
-	walletRegistry, err := addressProvider.GetAddress(addresses.WalletRegistryAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -113,52 +106,60 @@ func (s *SafeMetadataService) GetSafeMetadata(
 		}
 
 		multiCalls = append(
-			multiCalls, multicall3.Multicall3Call3{
+			multiCalls,
+			multicall.Multicall3Call3{
 				Target:       safe,
 				AllowFailure: true,
 				CallData:     getOwnersCallData,
-			}, multicall3.Multicall3Call3{
+			},
+			multicall.Multicall3Call3{
 				Target:       safe,
 				AllowFailure: true,
 				CallData:     getThresholdCallData,
-			}, multicall3.Multicall3Call3{
+			},
+			multicall.Multicall3Call3{
 				Target:       safe,
 				AllowFailure: true,
 				CallData:     getNonceCallData,
-			}, multicall3.Multicall3Call3{
+			},
+			multicall.Multicall3Call3{
 				Target:       walletRegistry,
 				AllowFailure: true,
 				CallData:     isWalletRegisteredCallData,
-			}, multicall3.Multicall3Call3{
+			},
+			multicall.Multicall3Call3{
 				Target:       walletRegistry,
 				AllowFailure: true,
 				CallData:     moderatedAccountOwner,
-			}, multicall3.Multicall3Call3{
+			},
+			multicall.Multicall3Call3{
 				Target:       safe,
 				AllowFailure: true,
 				CallData:     getGuardCallData,
-			}, multicall3.Multicall3Call3{
+			},
+			multicall.Multicall3Call3{
 				Target:       safe,
 				AllowFailure: true,
 				CallData:     getVersionCallData,
 			},
 		)
 	}
-	// number of calls for each safe in the multi-call
-	multiSendCallLength := 7
-	multiCallResponse, err := s.multiCaller.Aggregate3(ctx, multiCalls, nil, chainID)
-	if err != nil {
-		return nil, err
-	}
 
-	if len(multiCallResponse) != len(safes)*multiSendCallLength {
-		return nil, ErrMalformedResponse
-	}
+	return multiCalls, nil
+}
 
+func (s *SafeMetadataService) processSafeMulticallResponse(
+	multiCallResponse []multicall.Multicall3Result,
+	safes []common.Address,
+) ([]types.Metadata, error) {
 	var response []types.Metadata
 	multicallIterator := 0
-	for _, safe := range safes {
-		if !multiCallResponse[multicallIterator].Success || !multiCallResponse[multicallIterator+1].Success || !multiCallResponse[multicallIterator+2].Success {
+	multiSendCallLength := 7
+
+	for _, address := range safes {
+		if !multiCallResponse[multicallIterator].Success ||
+			!multiCallResponse[multicallIterator+1].Success ||
+			!multiCallResponse[multicallIterator+2].Success {
 			log.Error().Any("response", multiCallResponse).Msg("invalid multicall response ")
 			return nil, ErrMalformedResponse
 		}
@@ -194,7 +195,7 @@ func (s *SafeMetadataService) GetSafeMetadata(
 		response = append(
 			response, types.Metadata{
 				Version:               strings.Trim(version, " "),
-				SafeAddress:           safe,
+				SafeAddress:           address,
 				Owners:                owners,
 				Threshold:             new(big.Int).SetBytes(multiCallResponse[multicallIterator+1].ReturnData).Uint64(),
 				Nonce:                 new(big.Int).SetBytes(multiCallResponse[multicallIterator+2].ReturnData).Uint64(),
@@ -206,4 +207,36 @@ func (s *SafeMetadataService) GetSafeMetadata(
 		multicallIterator += multiSendCallLength
 	}
 	return response, nil
+}
+
+func (s *SafeMetadataService) GetSafeMetadata(
+	ctx context.Context,
+	safes []common.Address,
+	chainID int64,
+) ([]types.Metadata, error) {
+	provider, err := s.addressRegistry.AddressProvider(chainID)
+	if err != nil {
+		return nil, err
+	}
+
+	walletRegistry, err := provider.GetAddress(WalletRegistryAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	multiCalls, err := s.prepareSafeMulticall(safes, walletRegistry)
+	if err != nil {
+		return nil, err
+	}
+
+	multiCallResponse, err := s.multiCaller.Aggregate3(ctx, multiCalls, nil, chainID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(multiCallResponse) != len(safes)*7 {
+		return nil, ErrMalformedResponse
+	}
+
+	return s.processSafeMulticallResponse(multiCallResponse, safes)
 }

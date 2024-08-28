@@ -1,4 +1,4 @@
-package gas
+package gasestimate
 
 import (
 	"context"
@@ -7,25 +7,24 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/Brahma-fi/console-transaction-builder/types"
+	"github.com/Brahma-fi/go-safe/pkg/logger"
+	"github.com/Brahma-fi/go-safe/types"
+	"github.com/Brahma-fi/go-safe/utils"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-resty/resty/v2"
 
-	"github.com/Brahma-fi/console-libs/log"
-
-	"github.com/Brahma-fi/console-transaction-builder/addresses"
-	binding "github.com/Brahma-fi/console-transaction-builder/contracts/safe"
+	binding "github.com/Brahma-fi/go-safe/contracts/safe"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-
-	"github.com/Brahma-fi/go-safe"
 )
 
 const (
-	SafeBufferLimit = 0.1
+	SafeBufferLimit     = 0.1
+	SimulateTxnAccessor = "SimulateTxnAccessor"
 )
 
 var (
@@ -40,8 +39,12 @@ type ethClientFactory interface {
 	Client(chainID int64) (*ethclient.Client, error)
 }
 
+type addressProvider interface {
+	GetAddress(key string) (common.Address, error)
+}
+
 type addressRegistry interface {
-	AddressProvider(chainID int64) (addresses.AddressProvider, error)
+	AddressProvider(chainID int64) (addressProvider, error)
 }
 
 type estimateGasResponse struct {
@@ -80,6 +83,7 @@ type Estimation struct {
 	safeAbi     *abi.ABI
 	accessorAbi *abi.ABI
 	clientURLs  map[int64]string // map[chainID]ethRpcURL
+	logger      logger.Logger
 }
 
 func NewGasEstimation(
@@ -89,6 +93,7 @@ func NewGasEstimation(
 	safeAbi *abi.ABI,
 	accessorAbi *abi.ABI,
 	clientURLs map[int64]string,
+	logger logger.Logger,
 ) *Estimation {
 	return &Estimation{
 		clientFactory:   clientFactory,
@@ -96,16 +101,18 @@ func NewGasEstimation(
 		safeAbi:         safeAbi,
 		accessorAbi:     accessorAbi,
 		clientURLs:      clientURLs,
+		logger:          logger,
 	}
 }
 
 // EstimateSafeGasv1_3_0 this estimates the max gas limit that should be given in form of safeTxGas and is compatible
 // with safe version 1.3.0
 // see https://github.com/safe-global/safe-core-sdk/blob/7959821ab08c96cf3babb9ed906c01d644ac49f4/packages/protocol-kit/src/utils/transactions/gas.ts#L17
+//
+//nolint:lll
 func (g *Estimation) EstimateSafeGasv1_3_0(ctx context.Context, safeTxn *types.SafeTx) (uint64, error) {
 	chainID := (*big.Int)(safeTxn.ChainId).Int64()
 
-	logger := log.GetLogger(ctx)
 	safeAddress := safeTxn.Safe.Address()
 	encoded, err := g.safeAbi.Pack(
 		"requiredTxGas",
@@ -129,10 +136,12 @@ func (g *Estimation) EstimateSafeGasv1_3_0(ctx context.Context, safeTxn *types.S
 
 	// the required length should be min 64 (uint256)
 	if len(data) < 64 {
-		logger.Warn("invalid response from eth_gasEstimate",
-			log.Str("safeAddress", safeAddress.Hex()),
-			log.Str("data", hexutil.Encode(encoded)),
-		)
+		if g.logger != nil {
+			g.logger.Warn("invalid response from eth_gasEstimate",
+				logger.Str("safeAddress", safeAddress.Hex()),
+				logger.Str("data", hexutil.Encode(encoded)),
+			)
+		}
 		return g.estimateGasViaEthClient(ctx, safeAddress, safeAddress, safeTxn.Value, safeTxn.Data, chainID)
 	}
 
@@ -141,10 +150,12 @@ func (g *Estimation) EstimateSafeGasv1_3_0(ctx context.Context, safeTxn *types.S
 	substr := data[len(data)-64:]
 	hexInt, err := hexutil.Decode("0x" + substr)
 	if err != nil {
-		logger.Warn("failed to convert resp to big.Int", log.Err(err),
-			log.Str("safeAddress", safeAddress.Hex()),
-			log.Str("data", hexutil.Encode(encoded)),
-		)
+		if g.logger != nil {
+			g.logger.Warn("failed to convert resp to big.Int", logger.Err(err),
+				logger.Str("safeAddress", safeAddress.Hex()),
+				logger.Str("data", hexutil.Encode(encoded)),
+			)
+		}
 		return g.estimateGasViaEthClient(ctx, safeAddress, safeAddress, safeTxn.Value, safeTxn.Data, chainID)
 	}
 
@@ -190,12 +201,13 @@ func (g *Estimation) EstimateSafeGasv1_4_0(_ context.Context, safeTxn *types.Saf
 		return 0, err
 	}
 
-	simAddress, err := addressProvider.GetAddress(addresses.SimulateTxnAccessor)
+	simAddress, err := addressProvider.GetAddress(SimulateTxnAccessor)
 	if err != nil {
 		return 0, err
 	}
 
 	safeAddress := safeTxn.Safe.Address()
+	//nolint:lll
 	// see https://github.com/safe-global/safe-contracts/blob/7a77545f288361893313af23194988731ee95261/test/accessors/SimulateTxAccessor.spec.ts#L70
 	encoded, err := g.accessorAbi.Pack(
 		"simulate",
@@ -207,6 +219,7 @@ func (g *Estimation) EstimateSafeGasv1_4_0(_ context.Context, safeTxn *types.Saf
 	}
 
 	simMixedCaseAddress := common.NewMixedcaseAddress(simAddress)
+	//nolint:lll
 	// see https://github.com/safe-global/safe-contracts/blob/7a77545f288361893313af23194988731ee95261/contracts/common/StorageAccessible.sol#L40
 	simulateAndRevert, err := g.safeAbi.Pack(
 		"simulateAndRevert",
@@ -240,7 +253,7 @@ func (g *Estimation) EstimateSafeGasv1_4_0(_ context.Context, safeTxn *types.Saf
 	// abi.encode(uint256(estimate),bool(success),bytes(returnData))
 	// hence we safely read the estimate as from 64 to 96
 	// as [success](32),[response.length](32),[estimate](32),[success](32),[returnData](variable)
-	gasUsed, err := safe.Slice(decoded, 64, 96)
+	gasUsed, err := utils.Slice(decoded, 64, 96)
 	if err != nil {
 		return 0, err
 	}
@@ -250,7 +263,7 @@ func (g *Estimation) EstimateSafeGasv1_4_0(_ context.Context, safeTxn *types.Saf
 }
 
 // EstimateSafeGas this estimates the max gas limit that should be given in form of safeTxGas
-// it selects the appropriate function accroding to the safe version
+// it selects the appropriate function according to the safe version
 func (g *Estimation) EstimateSafeGas(ctx context.Context, safeTxn *types.SafeTx) (uint64, error) {
 	chainID := (*big.Int)(safeTxn.ChainId).Int64()
 
@@ -263,10 +276,12 @@ func (g *Estimation) EstimateSafeGas(ctx context.Context, safeTxn *types.SafeTx)
 	if err != nil {
 		return 0, err
 	}
-	version, err := userSafe.VERSION(nil)
+
+	version, err := userSafe.VERSION(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return 0, err
 	}
+
 	switch version {
 	case "1.3.0":
 		return g.EstimateSafeGasv1_3_0(ctx, safeTxn)
@@ -284,13 +299,16 @@ func estimateDataGasCost(data []byte) (cost uint64) {
 			cost += 16
 		}
 	}
-	return
+
+	return cost
 }
 
 // this client calls the rpc using the resty client
 // this is done because the client.ethClient and rpc.Client throw errors using error.message
 // this does not return the data given in Error object which is used to recover the gasUsed from the safe
 // see https://github.com/safe-global/safe-contracts/blob/186a21a74b327f17fc41217a927dea7064f74604/contracts/GnosisSafe.sol#L315
+//
+//nolint:lll
 func (g *Estimation) rawEstimateGasCall(transaction ethTransaction, chainID int64) (string, error) {
 	rpcURL, err := g.getURL(chainID)
 	if err != nil {
@@ -314,6 +332,8 @@ func (g *Estimation) rawEstimateGasCall(transaction ethTransaction, chainID int6
 
 // similar to the above but this does eth_call with extra gas and gasPrice
 // see https://github.com/safe-global/safe-contracts/blob/186a21a74b327f17fc41217a927dea7064f74604/contracts/GnosisSafe.sol#L315
+//
+//nolint:lll
 func (g *Estimation) rawEthCall(transaction ethTransactionWithGas, chainID int64) (string, error) {
 	rpcURL, err := g.getURL(chainID)
 	if err != nil {

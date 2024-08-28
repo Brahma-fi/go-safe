@@ -1,4 +1,4 @@
-package safe
+package gasestimate
 
 import (
 	"context"
@@ -123,5 +123,4 @@ func TestEstimateSafeTransactionGasLimit(t *testing.T) {
 		assert.NoError(t, err, "error not expected")
 		assert.Equal(t, p.expectedLimit, estimate, "estimated values are different")
 	}
-
 }

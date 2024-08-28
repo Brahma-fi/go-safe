@@ -1,4 +1,4 @@
-package safe
+package encoders
 
 import (
 	"math/big"
@@ -36,14 +36,14 @@ func Test(t *testing.T) {
 	builder := NewPackBuilder()
 	val := new(big.Int).SetInt64(0)
 	data, _ := hexutil.Decode("0xa9059cbb000000000000000000000000c20e3a951e03edd9e17c027324a07d2841cdf983000000000000000000000000000000000000000000000000016345785d8a0000")
-	builder.AddAddress(common.HexToAddress("0x02ABBDbAaa7b1BB64B5c878f7ac17f8DDa169532"))
-	builder.AddUint256(val)
-	builder.AddBytes(data)
-	builder.AddUint8(0)
-	builder.AddAddress(common.HexToAddress("0x4fadb18339be16d57f27a8a65d78ffecf29037d0"))
-	builder.AddUint256(val)
-	builder.AddBytes(common.HexToHash("0x954c8850b002325bd02c8cffb07b6226ff77b3bd16f865827a63ca510ff1559a").Bytes())
-	builder.AddUint32(1694514609)
+	assert.NoError(t, builder.AddAddress(common.HexToAddress("0x02ABBDbAaa7b1BB64B5c878f7ac17f8DDa169532")))
+	assert.NoError(t, builder.AddUint256(val))
+	assert.NoError(t, builder.AddBytes(data))
+	assert.NoError(t, builder.AddUint8(0))
+	assert.NoError(t, builder.AddAddress(common.HexToAddress("0x4fadb18339be16d57f27a8a65d78ffecf29037d0")))
+	assert.NoError(t, builder.AddUint256(val))
+	assert.NoError(t, builder.AddBytes(common.HexToHash("0x954c8850b002325bd02c8cffb07b6226ff77b3bd16f865827a63ca510ff1559a").Bytes()))
+	assert.NoError(t, builder.AddUint32(1694514609))
 	p, _ := builder.Pack()
 	assert.Equal(
 		t,
