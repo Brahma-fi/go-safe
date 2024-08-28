@@ -1,6 +1,6 @@
 module github.com/Brahma-fi/go-safe
 
-go 1.23
+go 1.23.0
 
 require (
 	github.com/ethereum/go-ethereum v1.14.8
