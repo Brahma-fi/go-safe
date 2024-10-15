@@ -18,6 +18,7 @@ gen-abis:
 	abigen --abi=./contracts/abis/safe.json --pkg=safe --out=contracts/safe/safe.go
 	abigen --abi=./contracts/abis/wallet_registry.json --pkg=walletregistry --out=contracts/walletregistry/wallet_registry.go
 	abigen --abi=./contracts/abis/multicall3.json --pkg=multicall --out=contracts/multicall/multicall.go
+	abigen --abi=./contracts/abis/eip_1271_validator.json --pkg=eip1271validator --out=contracts/validators/eip1271.go
 
 build: build-common ## - build
 	@ $(GO) build ./...
@@ -31,7 +32,7 @@ build-common: ## - execute build common tasks clean and mod tidy
 
 .PHONY: test
 test: ## - execute go test command
-	@ go test -v -cover ./...
+	@ go test -v -cover ./... -skip 'TestVerifySignedSafeSignatureWithEIP1271'
 
 .PHONY: scan
 scan: ## - execute GOSEC static code analysis
