@@ -22,7 +22,6 @@ func TestVerifySignedSafeSignatureWithEIP1271(t *testing.T) {
 		signature[crypto.RecoveryIDOffset] += 27 // Transform yellow paper V from 27/28 to 0/1
 
 	}
-
 	assert.NoError(t, VerifyPersonalSignatureWithEIP1271(
 		context.Background(),
 		client,
