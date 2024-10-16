@@ -20,8 +20,8 @@ func TestVerifySignedSafeSignatureWithEIP1271(t *testing.T) {
 	assert.NoError(t, err, "failed to parse signature")
 	if signature[crypto.RecoveryIDOffset] == 0 || signature[crypto.RecoveryIDOffset] == 1 {
 		signature[crypto.RecoveryIDOffset] += 27 // Transform yellow paper V from 27/28 to 0/1
-
 	}
+
 	assert.NoError(t, VerifyPersonalSignatureWithEIP1271(
 		context.Background(),
 		client,
