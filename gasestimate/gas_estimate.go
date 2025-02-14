@@ -39,14 +39,6 @@ type ethClientFactory interface {
 	Client(chainID int64) (*ethclient.Client, error)
 }
 
-type addressProvider interface {
-	GetAddress(key string) (common.Address, error)
-}
-
-type addressRegistry interface {
-	AddressProvider(chainID int64) (addressProvider, error)
-}
-
 type estimateGasResponse struct {
 	Jsonrpc string `json:"jsonrpc"`
 	ID      int    `json:"id"`
@@ -78,7 +70,7 @@ type estimateGasRequest struct {
 
 type Estimation struct {
 	clientFactory   ethClientFactory
-	addressRegistry addressRegistry
+	addressRegistry types.AddressRegistry
 
 	safeAbi     *abi.ABI
 	accessorAbi *abi.ABI
@@ -88,7 +80,7 @@ type Estimation struct {
 
 func NewGasEstimation(
 	clientFactory ethClientFactory,
-	addRegistry addressRegistry,
+	addRegistry types.AddressRegistry,
 
 	safeAbi *abi.ABI,
 	accessorAbi *abi.ABI,
@@ -196,16 +188,10 @@ func (g *Estimation) EstimateSafeGasv1_3_0(ctx context.Context, safeTxn *types.S
 func (g *Estimation) EstimateSafeGasv1_4_0(_ context.Context, safeTxn *types.SafeTx) (uint64, error) {
 	chainID := (*big.Int)(safeTxn.ChainId).Int64()
 
-	addressProvider, err := g.addressRegistry.AddressProvider(chainID)
+	simAddress, err := g.addressRegistry.GetAddressByChainID(chainID, SimulateTxnAccessor)
 	if err != nil {
 		return 0, err
 	}
-
-	simAddress, err := addressProvider.GetAddress(SimulateTxnAccessor)
-	if err != nil {
-		return 0, err
-	}
-
 	safeAddress := safeTxn.Safe.Address()
 	//nolint:lll
 	// see https://github.com/safe-global/safe-contracts/blob/7a77545f288361893313af23194988731ee95261/test/accessors/SimulateTxAccessor.spec.ts#L70
