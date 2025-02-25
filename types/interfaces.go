@@ -9,7 +9,7 @@ import (
 )
 
 type AddressRegistry interface {
-	GetAddressByChainID(chainID int64, key string,) (common.Address, error)
+	GetAddressByChainID(chainID int64, key string) (common.Address, error)
 }
 
 type MultiCaller interface {
