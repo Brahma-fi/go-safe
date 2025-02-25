@@ -1,4 +1,4 @@
-package metadata
+package types
 
 import (
 	"context"
@@ -8,15 +8,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type addressProvider interface {
-	GetAddress(key string) (common.Address, error)
+type AddressRegistry interface {
+	GetAddressByChainID(chainID int64, key string) (common.Address, error)
 }
 
-type addressRegistry interface {
-	AddressProvider(chainID int64) (addressProvider, error)
-}
-
-type multiCaller interface {
+type MultiCaller interface {
 	Aggregate3(
 		ctx context.Context,
 		calls []multicall.Multicall3Call3,

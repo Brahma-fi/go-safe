@@ -26,8 +26,8 @@ var (
 )
 
 type SafeMetadataService struct {
-	addressRegistry addressRegistry
-	multiCaller     multiCaller
+	addressRegistry types.AddressRegistry
+	multiCaller     types.MultiCaller
 
 	safeAbi           *abi.ABI
 	walletRegistryAbi *abi.ABI
@@ -35,8 +35,8 @@ type SafeMetadataService struct {
 }
 
 func NewSafeMetadataService(
-	addrRegistry addressRegistry,
-	mc multiCaller,
+	addrRegistry types.AddressRegistry,
+	mc types.MultiCaller,
 ) (*SafeMetadataService, error) {
 	walletRegistryAbi, err := abi.JSON(strings.NewReader(walletregistry.WalletregistryMetaData.ABI))
 	if err != nil {
@@ -214,12 +214,7 @@ func (s *SafeMetadataService) GetSafeMetadata(
 	safes []common.Address,
 	chainID int64,
 ) ([]types.Metadata, error) {
-	provider, err := s.addressRegistry.AddressProvider(chainID)
-	if err != nil {
-		return nil, err
-	}
-
-	walletRegistry, err := provider.GetAddress(WalletRegistryAddress)
+	walletRegistry, err := s.addressRegistry.GetAddressByChainID(chainID, WalletRegistryAddress)
 	if err != nil {
 		return nil, err
 	}
