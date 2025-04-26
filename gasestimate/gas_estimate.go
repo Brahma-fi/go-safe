@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-resty/resty/v2"
 
 	binding "github.com/Brahma-fi/go-safe/contracts/safe"
@@ -36,7 +35,19 @@ var (
 var commonClient = resty.New()
 
 type ethClientFactory interface {
-	Client(chainID int64) (*ethclient.Client, error)
+	RetryableClient(chainID int64) (Clients, error)
+}
+
+type Clients interface {
+	ethereum.BlockNumberReader
+	ethereum.ChainIDReader
+	ethereum.GasEstimator
+	ethereum.ChainStateReader
+	ethereum.GasPricer
+	ethereum.GasPricer1559
+	ethereum.TransactionReader
+	bind.ContractCaller
+	bind.DeployBackend
 }
 
 type estimateGasResponse struct {
@@ -81,7 +92,6 @@ type Estimation struct {
 func NewGasEstimation(
 	clientFactory ethClientFactory,
 	addRegistry types.AddressRegistry,
-
 	safeAbi *abi.ABI,
 	accessorAbi *abi.ABI,
 	clientURLs map[int64]string,
@@ -129,7 +139,8 @@ func (g *Estimation) EstimateSafeGasv1_3_0(ctx context.Context, safeTxn *types.S
 	// the required length should be min 64 (uint256)
 	if len(data) < 64 {
 		if g.logger != nil {
-			g.logger.Warn("invalid response from eth_gasEstimate",
+			g.logger.Warn(
+				"invalid response from eth_gasEstimate",
 				logger.Str("safeAddress", safeAddress.Hex()),
 				logger.Str("data", hexutil.Encode(encoded)),
 			)
@@ -143,7 +154,8 @@ func (g *Estimation) EstimateSafeGasv1_3_0(ctx context.Context, safeTxn *types.S
 	hexInt, err := hexutil.Decode("0x" + substr)
 	if err != nil {
 		if g.logger != nil {
-			g.logger.Warn("failed to convert resp to big.Int", logger.Err(err),
+			g.logger.Warn(
+				"failed to convert resp to big.Int", logger.Err(err),
 				logger.Str("safeAddress", safeAddress.Hex()),
 				logger.Str("data", hexutil.Encode(encoded)),
 			)
@@ -253,12 +265,12 @@ func (g *Estimation) EstimateSafeGasv1_4_0(_ context.Context, safeTxn *types.Saf
 func (g *Estimation) EstimateSafeGas(ctx context.Context, safeTxn *types.SafeTx) (uint64, error) {
 	chainID := (*big.Int)(safeTxn.ChainId).Int64()
 
-	ethClient, err := g.clientFactory.Client(chainID)
+	ethClient, err := g.clientFactory.RetryableClient(chainID)
 	if err != nil {
 		return 0, err
 	}
 
-	userSafe, err := binding.NewSafe(safeTxn.Safe.Address(), ethClient)
+	userSafe, err := binding.NewSafeCaller(safeTxn.Safe.Address(), ethClient)
 	if err != nil {
 		return 0, err
 	}
@@ -355,7 +367,7 @@ func (g *Estimation) estimateGasViaEthClient(
 		return 0, errors.New("invalid data")
 	}
 
-	ethClient, err := g.clientFactory.Client(chainID)
+	ethClient, err := g.clientFactory.RetryableClient(chainID)
 	if err != nil {
 		return 0, err
 	}
