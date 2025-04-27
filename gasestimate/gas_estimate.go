@@ -33,8 +33,8 @@ var (
 // safe on concurrent use
 var commonClient = resty.New()
 
-type ethClientFactory interface {
-	RetryableClient(chainID int64) (Clients, error)
+type gasEstimatorFactory interface {
+	RetryableGasEstimator(chainID int64) (ethereum.GasEstimator, error)
 }
 
 type Clients interface {
@@ -79,8 +79,8 @@ type estimateGasRequest struct {
 }
 
 type Estimation struct {
-	clientFactory   ethClientFactory
-	addressRegistry types.AddressRegistry
+	gasEstimatorFactory gasEstimatorFactory
+	addressRegistry     types.AddressRegistry
 
 	safeAbi     *abi.ABI
 	accessorAbi *abi.ABI
@@ -89,7 +89,7 @@ type Estimation struct {
 }
 
 func NewGasEstimation(
-	clientFactory ethClientFactory,
+	clientFactory gasEstimatorFactory,
 	addRegistry types.AddressRegistry,
 	safeAbi *abi.ABI,
 	accessorAbi *abi.ABI,
@@ -97,12 +97,12 @@ func NewGasEstimation(
 	logger logger.Logger,
 ) *Estimation {
 	return &Estimation{
-		clientFactory:   clientFactory,
-		addressRegistry: addRegistry,
-		safeAbi:         safeAbi,
-		accessorAbi:     accessorAbi,
-		clientURLs:      clientURLs,
-		logger:          logger,
+		gasEstimatorFactory: clientFactory,
+		addressRegistry:     addRegistry,
+		safeAbi:             safeAbi,
+		accessorAbi:         accessorAbi,
+		clientURLs:          clientURLs,
+		logger:              logger,
 	}
 }
 
@@ -343,7 +343,7 @@ func (g *Estimation) estimateGasViaEthClient(
 		return 0, errors.New("invalid data")
 	}
 
-	ethClient, err := g.clientFactory.RetryableClient(chainID)
+	ethClient, err := g.gasEstimatorFactory.RetryableGasEstimator(chainID)
 	if err != nil {
 		return 0, err
 	}
