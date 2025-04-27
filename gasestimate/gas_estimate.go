@@ -17,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/go-resty/resty/v2"
 
-	binding "github.com/Brahma-fi/go-safe/contracts/safe"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
@@ -263,30 +262,7 @@ func (g *Estimation) EstimateSafeGasv1_4_0(_ context.Context, safeTxn *types.Saf
 // EstimateSafeGas this estimates the max gas limit that should be given in form of safeTxGas
 // it selects the appropriate function according to the safe version
 func (g *Estimation) EstimateSafeGas(ctx context.Context, safeTxn *types.SafeTx) (uint64, error) {
-	chainID := (*big.Int)(safeTxn.ChainId).Int64()
-
-	ethClient, err := g.clientFactory.RetryableClient(chainID)
-	if err != nil {
-		return 0, err
-	}
-
-	userSafe, err := binding.NewSafeCaller(safeTxn.Safe.Address(), ethClient)
-	if err != nil {
-		return 0, err
-	}
-
-	version, err := userSafe.VERSION(&bind.CallOpts{Context: ctx})
-	if err != nil {
-		return 0, err
-	}
-
-	switch version {
-	case "1.3.0":
-		return g.EstimateSafeGasv1_3_0(ctx, safeTxn)
-	case "1.4.0", "1.4.1":
-		return g.EstimateSafeGasv1_4_0(ctx, safeTxn)
-	}
-	return 0, errors.New("invalid safe version")
+	return g.EstimateSafeGasv1_4_0(ctx, safeTxn)
 }
 
 func estimateDataGasCost(data []byte) (cost uint64) {
