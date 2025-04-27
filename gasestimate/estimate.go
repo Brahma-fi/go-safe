@@ -39,11 +39,10 @@ type EstimateSafeTransactionClient interface {
 //
 //nolint:lll
 func EstimateSafeTransactionGasLimit(
-	ctx context.Context, client EstimateSafeTransactionClient,
+	ctx context.Context,
+	client EstimateSafeTransactionClient,
 	request EstimateSafeTransactionGasRequest,
-) (
-	uint64, error,
-) {
+) (uint64, error) {
 	if request.MaxGasLimit <= 0 {
 		request.MaxGasLimit = DefaultMaxGasLimit
 	}
