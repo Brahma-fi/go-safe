@@ -1,6 +1,14 @@
 package logger
 
-import "github.com/rs/zerolog"
+import (
+	"fmt"
+
+	"github.com/rs/zerolog"
+)
+
+const (
+	_logFieldComponent = "component"
+)
 
 type Field func(e *zerolog.Event)
 
@@ -45,4 +53,82 @@ func Any(key string, val any) Field {
 	return func(e *zerolog.Event) {
 		e.Any(key, val)
 	}
+}
+
+type zeroLoggerWrapper struct {
+	logger *zerolog.Logger
+}
+
+func NewLogger(logger *zerolog.Logger) Logger {
+	return &zeroLoggerWrapper{logger: logger}
+}
+
+func (z *zeroLoggerWrapper) Info(msg string, fields ...Field) {
+	event := z.logger.Info()
+	for _, field := range fields {
+		field(event)
+	}
+
+	event.Msg(msg)
+}
+
+func (z *zeroLoggerWrapper) Infof(msg string, args ...any) {
+	z.logger.Info().Msg(fmt.Sprintf(msg, args...))
+}
+
+func (z *zeroLoggerWrapper) Error(msg string, fields ...Field) {
+	event := z.logger.Error()
+	for _, field := range fields {
+		field(event)
+	}
+
+	event.Msg(msg)
+}
+
+func (z *zeroLoggerWrapper) Errorf(msg string, args ...any) {
+	z.logger.Error().Msg(fmt.Sprintf(msg, args...))
+}
+
+func (z *zeroLoggerWrapper) Warn(msg string, fields ...Field) {
+	event := z.logger.Warn()
+	for _, field := range fields {
+		field(event)
+	}
+
+	event.Msg(msg)
+}
+
+func (z *zeroLoggerWrapper) Warnf(msg string, args ...any) {
+	z.logger.Warn().Msg(fmt.Sprintf(msg, args...))
+}
+
+func (z *zeroLoggerWrapper) Debug(msg string, fields ...Field) {
+	event := z.logger.Debug()
+	for _, field := range fields {
+		field(event)
+	}
+
+	event.Msg(msg)
+}
+
+func (z *zeroLoggerWrapper) Debugf(msg string, args ...any) {
+	z.logger.Debug().Msg(fmt.Sprintf(msg, args...))
+}
+
+func (z *zeroLoggerWrapper) Component(name string) Logger {
+	l := z.logger.With().Str(_logFieldComponent, name).Logger()
+	return &zeroLoggerWrapper{
+		logger: &l,
+	}
+}
+
+func (z *zeroLoggerWrapper) Field(field, value string) Logger {
+	l := z.logger.With().Str(field, value).Logger()
+	return &zeroLoggerWrapper{
+		logger: &l,
+	}
+}
+
+func (z *zeroLoggerWrapper) zeroLoggerWrapper() *zeroLoggerWrapper {
+	return z
 }
