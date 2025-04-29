@@ -128,7 +128,3 @@ func (z *zeroLoggerWrapper) Field(field, value string) Logger {
 		logger: &l,
 	}
 }
-
-func (z *zeroLoggerWrapper) zeroLoggerWrapper() *zeroLoggerWrapper {
-	return z
-}
