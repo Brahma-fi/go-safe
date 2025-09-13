@@ -108,7 +108,7 @@ func PackTransactions(request *types.SafeMultiSendRequest) ([]byte, *big.Int, er
 		if err != nil {
 			return nil, nil, err
 		}
-		totalValue.And(totalValue, txn.Value())
+		totalValue.Add(totalValue, txn.Value())
 	}
 	packed, err := packer.Pack()
 	if err != nil {
