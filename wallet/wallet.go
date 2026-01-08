@@ -6,8 +6,8 @@ import (
 	"crypto/subtle"
 	"errors"
 
-	"go-safe/types"
-	"go-safe/utils"
+	"github.com/lastdotnet/go-safe/types"
+	"github.com/lastdotnet/go-safe/utils"
 	
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"

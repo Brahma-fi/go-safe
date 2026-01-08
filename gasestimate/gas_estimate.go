@@ -7,9 +7,9 @@ import (
 	"math/big"
 	"strings"
 
-	"go-safe/pkg/logger"
-	"go-safe/types"
-	"go-safe/utils"
+	"github.com/lastdotnet/go-safe/pkg/logger"
+	"github.com/lastdotnet/go-safe/types"
+	"github.com/lastdotnet/go-safe/utils"
 	
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"

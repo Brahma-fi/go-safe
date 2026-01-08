@@ -4,7 +4,8 @@ import (
 	"context"
 	"math/big"
 
-	"go-safe/contracts/multicall"
+	"github.com/lastdotnet/go-safe/contracts/multicall"
+	
 	"github.com/ethereum/go-ethereum/common"
 )
 
