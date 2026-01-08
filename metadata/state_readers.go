@@ -4,8 +4,9 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/Brahma-fi/go-safe/contracts/safe"
-	"github.com/Brahma-fi/go-safe/types"
+	"go-safe/contracts/safe"
+	"go-safe/types"
+	
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )

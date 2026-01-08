@@ -7,9 +7,10 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/Brahma-fi/go-safe/pkg/logger"
-	"github.com/Brahma-fi/go-safe/types"
-	"github.com/Brahma-fi/go-safe/utils"
+	"go-safe/pkg/logger"
+	"go-safe/types"
+	"go-safe/utils"
+	
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"

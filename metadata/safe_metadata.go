@@ -8,10 +8,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Brahma-fi/go-safe/contracts/multicall"
-	"github.com/Brahma-fi/go-safe/contracts/safe"
-	"github.com/Brahma-fi/go-safe/contracts/walletregistry"
-	"github.com/Brahma-fi/go-safe/types"
+	"go-safe/contracts/multicall"
+	"go-safe/contracts/safe"
+	"go-safe/contracts/walletregistry"
+	"go-safe/types"
+	
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"

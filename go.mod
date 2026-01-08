@@ -1,4 +1,4 @@
-module github.com/Brahma-fi/go-safe
+module go-safe
 
 go 1.23.0
 

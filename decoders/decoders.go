@@ -6,8 +6,9 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/Brahma-fi/go-safe/types"
-	"github.com/Brahma-fi/go-safe/utils"
+	"go-safe/types"
+	"go-safe/utils"
+	
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )

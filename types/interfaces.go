@@ -4,7 +4,7 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/Brahma-fi/go-safe/contracts/multicall"
+	"go-safe/contracts/multicall"
 	"github.com/ethereum/go-ethereum/common"
 )
 
