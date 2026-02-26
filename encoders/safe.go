@@ -7,7 +7,7 @@ import (
 
 	"github.com/lastdotnet/go-safe/contracts/safe"
 	"github.com/lastdotnet/go-safe/types"
-	
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"

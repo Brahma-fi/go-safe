@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	"github.com/lastdotnet/go-safe/contracts/multicall"
-	
+
 	"github.com/ethereum/go-ethereum/common"
 )
 

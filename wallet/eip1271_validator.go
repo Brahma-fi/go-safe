@@ -6,7 +6,7 @@ import (
 
 	eip1271validator "github.com/lastdotnet/go-safe/contracts/validators"
 	"github.com/lastdotnet/go-safe/utils"
-	
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"

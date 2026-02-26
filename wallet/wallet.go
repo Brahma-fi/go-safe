@@ -8,7 +8,7 @@ import (
 
 	"github.com/lastdotnet/go-safe/types"
 	"github.com/lastdotnet/go-safe/utils"
-	
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
