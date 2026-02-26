@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	SomeErr = errors.New("im underwater")
+	ErrSome = errors.New("im underwater")
 )
 
 type mockEstimateBackend struct {
@@ -37,13 +37,13 @@ type failingBackend struct {
 }
 
 func (m *failingBackend) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (uint64, error) {
-	return 0, SomeErr
+	return 0, ErrSome
 }
 
 func (m *failingBackend) CallContract(ctx context.Context, msg ethereum.CallMsg, blockNumber *big.Int) (
 	[]byte, error,
 ) {
-	return nil, SomeErr
+	return nil, ErrSome
 }
 
 func TestEstimateSafeTransactionGasLimit(t *testing.T) {
@@ -110,7 +110,7 @@ func TestEstimateSafeTransactionGasLimit(t *testing.T) {
 			},
 			backend:       &failingBackend{},
 			expectedLimit: 0,
-			err:           SomeErr,
+			err:           ErrSome,
 		},
 	}
 	for _, p := range params {

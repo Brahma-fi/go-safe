@@ -8,7 +8,7 @@ import (
 
 	"github.com/lastdotnet/go-safe/types"
 	"github.com/lastdotnet/go-safe/utils"
-	
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -85,10 +85,7 @@ func ParseMultiSendData(data []byte) ([]types.InternalTxn, error) {
 		return nil, err
 	}
 	baseOffset := 0
-	for {
-		if baseOffset >= len(multiSendPacked) {
-			break
-		}
+	for baseOffset < len(multiSendPacked) {
 		var internalTxn types.InternalTxn
 		internalTxn, baseOffset, err = parseInternalTransaction(multiSendPacked, baseOffset)
 		if err != nil {
