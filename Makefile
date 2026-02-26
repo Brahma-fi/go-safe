@@ -2,7 +2,7 @@
 
 GOBIN          = $(PWD)/.bin
 GO 		       = go
-LINT_VERSION   =1.51.1
+LINT_VERSION   =2.10.1
 LINT_IMAGE     =golangci/golangci-lint:v${LINT_VERSION}-alpine
 LINT_FLAGS     =--timeout=10m0s
 

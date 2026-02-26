@@ -1,113 +1,97 @@
-# This file configures github.com/golangci/golangci-lint.
-
+version: "2"
 run:
-  timeout: 5m
   tests: true
-  # default is true. Enables skipping of directories:
-  #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
-  skip-dirs-use-default: true
-
 linters:
-  disable-all: true
+  default: none
   enable:
-    - goimports
-    - gosimple
-    - govet
-    - ineffassign
-    - misspell
-    - unconvert
-    - typecheck
-    - unused
-    - staticcheck
     - bidichk
     - durationcheck
-    - whitespace
-    - revive # only certain checks enabled
-    - nilerr # finds the code that returns nil even if it checks that the error is not nil
-    - lll
-    - unparam
     - errcheck
     - funlen
-    - gofmt
+    - govet
+    - inamedparam
+    - ineffassign
+    - lll
+    - misspell
+    - nakedret
+    - nilerr
     - nolintlint
     - perfsprint
-    - inamedparam
-    - nakedret
-
-linters-settings:
-  gofmt:
-    simplify: true
-  revive:
-    enable-all-rules: false
-    # here we enable specific useful rules
-    # see https://golangci-lint.run/usage/linters/#revive for supported rules
-    rules:
-      - name: receiver-naming
-        severity: warning
-        disabled: false
-        exclude: [""]
-
-  errcheck:
-    # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
-    # Such cases aren't reported by default.
-    # Default: false
-    check-type-assertions: true
-
-  nolintlint:
-    # Exclude following linters from requiring an explanation.
-    # Default: []
-    allow-no-explanation: [ funlen, gocognit, lll ]
-    # Enable to require an explanation of nonzero length after each nolint directive.
-    # Default: false
-    require-explanation: true
-    # Enable to require nolint directives to mention the specific linter being suppressed.
-    # Default: false
-    require-specific: true
-
-  perfsprint:
-    # Optimizes into strings concatenation.
-    # Default: true
-    strconcat: false
-
-  nakedret:
-    # Make an issue if func has more lines of code than this setting, and it has naked returns.
-    # Default: 30
-    max-func-lines: 0
-
-  inamedparam:
-    # Skips check for interface methods with only a single parameter.
-    # Default: false
-    skip-single-param: true
-
-  funlen:
-    # Checks the number of lines in a function.
-    # If lower than 0, disable the check.
-    # Default: 60
-    lines: 100
-    # Checks the number of statements in a function.
-    # If lower than 0, disable the check.
-    # Default: 40
-    statements: 50
-    # Ignore comments when counting lines.
-    # Default false
-    ignore-comments: true
-
-issues:
-  exclude-files:
-    - core/genesis_alloc.go
-  exclude-rules:
-    - source: "(noinspection|TODO)"
-      linters: [ godot ]
-    - source: "//noinspection"
-      linters: [ gocritic ]
-    - path: "_test\\.go"
-      linters:
-        - bodyclose
-        - dupl
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+  settings:
+    errcheck:
+      check-type-assertions: true
+    funlen:
+      lines: 100
+      statements: 50
+      ignore-comments: true
+    inamedparam:
+      skip-single-param: true
+    nakedret:
+      max-func-lines: 0
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-no-explanation:
         - funlen
-        - goconst
-        - gosec
-        - noctx
-        - wrapcheck
+        - gocognit
         - lll
-        - errcheck
+    perfsprint:
+      strconcat: false
+    revive:
+      enable-all-rules: false
+      rules:
+        - name: receiver-naming
+          severity: warning
+          disabled: false
+          exclude:
+            - ""
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - godot
+        source: (noinspection|TODO)
+      - linters:
+          - gocritic
+        source: //noinspection
+      - linters:
+          - bodyclose
+          - dupl
+          - errcheck
+          - funlen
+          - goconst
+          - gosec
+          - lll
+          - noctx
+          - wrapcheck
+        path: _test\.go
+    paths:
+      - core/genesis_alloc.go
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+  exclusions:
+    generated: lax
+    paths:
+      - core/genesis_alloc.go
+      - third_party$
+      - builtin$
+      - examples$
