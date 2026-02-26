@@ -1,0 +1,164 @@
+---
+description: Step-by-step guide for implementing a new DeFi protocol calldata parser
+globs: pkg/calldata_parser/**/*.go
+alwaysApply: false
+---
+
+# Implementing a New Protocol Parser
+
+## Checklist
+
+Follow these steps in order when adding a new protocol parser:
+
+1. Define entity types in `pkg/entity/<protocol>.go`
+2. Create parser in `pkg/calldata_parser/<protocol>_parser.go`
+3. Register parser kinds in `pkg/entity/parsers.go`
+4. Register parser constructor in `calldata_parser.go`
+5. Write tests in `pkg/calldata_parser/<protocol>_parser_test.go`
+
+## Step 1: Entity Types (`pkg/entity/<protocol>.go`)
+
+Define selectors and parsed parameter structs:
+
+```go
+package entity
+
+import (
+    "github.com/lastdotnet/protocol-parser/pkg/jsonbigint"
+    "github.com/ethereum/go-ethereum/common"
+)
+
+// Selectors — 4-byte function selectors (8 hex chars, no 0x prefix)
+const (
+    ProtocolSupplySelector   = "abcdef01"
+    ProtocolWithdrawSelector = "abcdef02"
+)
+
+// Parsed parameter structs — use `mapstructure` tags matching ABI param names
+type ProtocolSupply struct {
+    Asset  common.Address         `mapstructure:"asset" json:"input_token"`
+    Amount *jsonbigint.JsonBigInt `mapstructure:"amount" json:"amount"`
+}
+```
+
+**Key rules for entity structs:**
+- `mapstructure` tag must match the ABI parameter name exactly (camelCase)
+- `json` tag for API serialization
+- Use `*jsonbigint.JsonBigInt` for `uint256` params
+- Use `common.Address` for `address` params
+- Use `[]common.Address` / `[]*jsonbigint.JsonBigInt` for array params
+
+## Step 2: Parser Implementation (`pkg/calldata_parser/<protocol>_parser.go`)
+
+Follow the established pattern exactly:
+
+```go
+package calldataparser
+
+import (
+    "context"
+    "fmt"
+    "strings"
+
+    "github.com/ethereum/go-ethereum/accounts/abi"
+    "github.com/ethereum/go-ethereum/common"
+    rpc "github.com/lastdotnet/swype-rpc"
+    addressestypes "github.com/lastdotnet/swype-transaction-builder/addresses/types"
+    "github.com/lastdotnet/protocol-parser/pkg/entity"
+    "github.com/lastdotnet/protocol-parser/pkg/utils"
+)
+
+const protocolParserName = "ProtocolParser"
+
+type ProtocolParser struct {
+    protocolAbi     *abi.ABI
+    addressRegistry addressestypes.AddressRegistry
+}
+
+func NewProtocolParser(
+    addressRegistry addressestypes.AddressRegistry,
+    _ rpc.ClientFactory, // use _ if not needed
+) (CalldataParserInterface, error) {
+    // Parse ABI from contract binding
+    protocolABI, err := abi.JSON(strings.NewReader(binding.MetaData.ABI))
+    if err != nil {
+        return nil, err
+    }
+    return &ProtocolParser{
+        protocolAbi:     &protocolABI,
+        addressRegistry: addressRegistry,
+    }, nil
+}
+
+func (*ProtocolParser) Name() string { return protocolParserName }
+
+func (p *ProtocolParser) MethodById(selector []byte) (*abi.Method, error) {
+    // Chain multiple ABIs if the protocol has multiple contracts
+    return p.protocolAbi.MethodById(selector)
+}
+
+func (*ProtocolParser) SupportedSelectors() []string {
+    // Return selectors that should be matched globally (not by address)
+    return []string{}
+}
+
+func (p *ProtocolParser) SupportedChainsToAddresses() (map[entity.ChainID][]common.Address, error) {
+    // Map each supported chain to the protocol's contract addresses
+    result := make(map[entity.ChainID][]common.Address)
+    for _, chain := range entity.SupportedChainIDs {
+        // Look up addresses from registry
+    }
+    return result, nil
+}
+
+func (p *ProtocolParser) Parse(ctx context.Context, chainID entity.ChainID, trace *entity.ParsedTrace) error {
+    if trace.ParsedOutput == nil {
+        trace.ParsedOutput = new(entity.ParsedOutput)
+    }
+    calldata := strings.TrimPrefix(trace.Input, "0x")
+    selector := calldata[:8]
+
+    switch selector {
+    case entity.ProtocolSupplySelector:
+        t := &entity.ProtocolSupply{}
+        if err := utils.Parse(p, calldata, "", t, nil); err != nil {
+            return fmt.Errorf("error parsing supply: %v", err)
+        }
+        trace.ParsedOutput.Type = entity.ProtocolSupplyParserKind
+        trace.ParsedOutput.ParsedParams = t
+        return nil
+    default:
+        return entity.ErrParserNotImplemented
+    }
+}
+```
+
+## Step 3: Register in `calldata_parser.go`
+
+Add constructor to `newParserCreators`:
+
+```go
+var newParserCreators = []NewParserCreator{
+    // ...existing parsers...
+    NewProtocolParser,
+}
+```
+
+## Address-Based vs Selector-Based Resolution
+
+- **Address-based** (`SupportedChainsToAddresses`): Use when the protocol has known contract addresses. Preferred for most DeFi protocols.
+- **Selector-based** (`SupportedSelectors`): Use for universal selectors (e.g., ERC20 transfer, multisend) that aren't tied to specific addresses.
+- Many parsers use both: address-based for main contracts, selector-based for callbacks like flash loan `executeOperation`.
+
+## Multiple ABIs
+
+When a protocol has multiple contracts (e.g., pool + gateway), chain `MethodById` calls:
+
+```go
+func (p *Parser) MethodById(selector []byte) (*abi.Method, error) {
+    if m, err := p.poolAbi.MethodById(selector); err == nil {
+        return m, nil
+    }
+    return p.gatewayAbi.MethodById(selector)
+}
+```

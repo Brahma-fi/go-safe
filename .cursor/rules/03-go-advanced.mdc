@@ -1,0 +1,93 @@
+---
+description: Performance optimization and advanced Go patterns - concurrency, observability, benchmarking
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# GO - ADVANCED PATTERNS & OPTIMIZATION
+
+## [P2] PERFORMANCE OPTIMIZATION
+
+### Memory Management
+- **Pre-allocate slices** when size is known: `make([]Type, 0, expectedSize)`
+- **Reuse buffers** with `sync.Pool` for high-throughput scenarios
+- **Avoid loading large files entirely into memory:** Use streaming/chunking
+
+### Struct Memory Alignment
+For hot paths, order fields largest → smallest to reduce padding.
+
+---
+
+## [P1] CONCURRENCY PATTERNS
+
+### Common Patterns
+1. **Worker Pool** — Fixed goroutines consuming from shared channel
+2. **Pipeline** — Chain of channels connecting processing stages
+3. **Fan-Out/Fan-In** — Parallel work, collected results
+4. **Semaphore** — Buffered channel as counting semaphore
+
+### Best Practices
+- **Always use `context.Context`** for cancellation and timeout propagation
+- **Use `sync.WaitGroup` or `errgroup.Group`** to wait for goroutine completion
+- **Prefer channels for communication**, mutexes for protecting shared state
+- **Handle errors properly** in goroutines (don't silently swallow)
+
+### Common Pitfalls
+```go
+// BAD: Goroutine leak (no way to stop)
+go func() { for { doWork() } }()
+
+// GOOD: Cancelable goroutine
+go func() {
+    for {
+        select {
+        case <-ticker.C: doWork()
+        case <-ctx.Done(): return
+        }
+    }
+}()
+```
+
+---
+
+## [P1] OBSERVABILITY
+
+### Structured Logging
+```go
+logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+logger.Info("user action", "user_id", userID, "action", "login")
+```
+
+### Log Levels
+- **DEBUG:** Development only
+- **INFO:** Normal operations, key events
+- **WARN:** Recoverable issues
+- **ERROR:** Failures requiring attention
+
+---
+
+## [P1] TESTING ADVANCED PATTERNS
+
+### Table-Driven Tests
+```go
+tests := []struct {
+    name    string
+    input   string
+    wantErr bool
+}{...}
+
+for _, tt := range tests {
+    t.Run(tt.name, func(t *testing.T) { ... })
+}
+```
+
+### Benchmarking
+```go
+func BenchmarkProcess(b *testing.B) {
+    data := generateTestData()
+    b.ResetTimer()
+    for i := 0; i < b.N; i++ {
+        process(data)
+    }
+}
+```

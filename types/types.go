@@ -11,20 +11,19 @@ import (
 // SafeTx is derived from the core.GnosisSafeTx type and does not include the output
 // fields which makes easy for the marshalling and unmarshalling
 type SafeTx struct {
-	// These fields are used both on input and output
-	Safe           common.MixedcaseAddress `json:"safe"`
-	To             common.MixedcaseAddress `json:"to"`
-	Value          math.Decimal256         `json:"value"`
-	GasPrice       math.Decimal256         `json:"gasPrice"`
 	Data           *hexutil.Bytes          `json:"data"`
-	Operation      uint8                   `json:"operation"`
+	ChainId        *math.HexOrDecimal256   `json:"chainId,omitempty"`
+	To             common.MixedcaseAddress `json:"to"`
+	Safe           common.MixedcaseAddress `json:"safe"`
+	SafeTxGas      big.Int                 `json:"safeTxGas"`
+	BaseGas        big.Int                 `json:"baseGas"`
+	GasPrice       math.Decimal256         `json:"gasPrice"`
+	Nonce          big.Int                 `json:"nonce"`
+	Value          math.Decimal256         `json:"value"`
+	InputExpHash   common.Hash             `json:"safeTxHash,omitempty"`
 	GasToken       common.Address          `json:"gasToken"`
 	RefundReceiver common.Address          `json:"refundReceiver"`
-	BaseGas        big.Int                 `json:"baseGas"`
-	SafeTxGas      big.Int                 `json:"safeTxGas"`
-	Nonce          big.Int                 `json:"nonce"`
-	InputExpHash   common.Hash             `json:"safeTxHash,omitempty"`
-	ChainId        *math.HexOrDecimal256   `json:"chainId,omitempty"`
+	Operation      uint8                   `json:"operation"`
 }
 
 type SafeMultiSendRequest struct {
@@ -42,35 +41,35 @@ type Transaction interface {
 }
 
 type InternalTxn struct {
-	Operation uint8          `json:"operation"`
-	To        common.Address `json:"to"`
 	Value     *big.Int       `json:"value"`
 	Data      hexutil.Bytes  `json:"data"`
+	To        common.Address `json:"to"`
+	Operation uint8          `json:"operation"`
 }
 
 type SafeMultiSigInput struct {
+	SafeTxGas      *big.Int      `json:"safeTxGas"`
+	BaseGas        *big.Int      `json:"baseGas"`
+	GasPrice       *big.Int      `json:"gasPrice"`
+	Signatures     hexutil.Bytes `json:"signatures"`
 	InternalTxn    `mapstructure:",squash"`
-	SafeTxGas      *big.Int       `json:"safeTxGas"`
-	BaseGas        *big.Int       `json:"baseGas"`
-	GasPrice       *big.Int       `json:"gasPrice"`
 	GasToken       common.Address `json:"gasToken"`
 	RefundReceiver common.Address `json:"refundReceiver"`
-	Signatures     hexutil.Bytes  `json:"signatures"`
 }
 
 type SafeMultiSigEvent struct {
+	AdditionalInfo hexutil.Bytes `json:"additionalInfo"`
 	InternalTxn
 	SafeMultiSigInput
-	AdditionalInfo hexutil.Bytes `json:"additionalInfo"`
 }
 
 type Metadata struct {
 	Version               string           `json:"version"`
-	SafeAddress           common.Address   `json:"safeAddress"`
 	Owners                []common.Address `json:"owners"`
 	Threshold             uint64           `json:"threshold"`
 	Nonce                 uint64           `json:"nonce"`
-	IsConsole             bool             `json:"isConsole"`
+	SafeAddress           common.Address   `json:"safeAddress"`
 	ModeratedAccountOwner common.Address   `json:"ModeratedAccountOwner"`
 	GuardAddress          common.Address   `json:"-"`
+	IsConsole             bool             `json:"isConsole"`
 }

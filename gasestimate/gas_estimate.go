@@ -10,7 +10,7 @@ import (
 	"github.com/lastdotnet/go-safe/pkg/logger"
 	"github.com/lastdotnet/go-safe/types"
 	"github.com/lastdotnet/go-safe/utils"
-	
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -52,12 +52,12 @@ type Clients interface {
 
 type estimateGasResponse struct {
 	Jsonrpc string `json:"jsonrpc"`
-	ID      int    `json:"id"`
 	Error   struct {
-		Code    int    `json:"code"`
 		Message string `json:"message"`
 		Data    string `json:"data"`
+		Code    int    `json:"code"`
 	} `json:"error"`
+	ID int `json:"id"`
 }
 
 type ethTransaction struct {

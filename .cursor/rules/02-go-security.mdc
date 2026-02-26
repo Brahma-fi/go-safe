@@ -1,0 +1,78 @@
+---
+description: Security-focused practices for Go development
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# GO - SECURITY STANDARDS
+
+## [P0-CRITICAL] SECRETS MANAGEMENT
+
+### Never Commit Secrets
+- **API keys, passwords, tokens, certificates** must NEVER be committed to version control
+- **Use environment variables:** Provide `.env.example` template without actual secrets
+- **Production:** Use secret managers (AWS Secrets Manager, HashiCorp Vault)
+
+### Environment Variables Best Practices
+```go
+// Fail fast if required secrets missing
+func loadConfig() (*Config, error) {
+    apiKey := os.Getenv("API_KEY")
+    if apiKey == "" {
+        return nil, errors.New("API_KEY environment variable required")
+    }
+    return &Config{APIKey: apiKey}, nil
+}
+```
+
+---
+
+## [P0-CRITICAL] INPUT VALIDATION
+
+- Every external input source must be validated
+- Use allowlists over denylists
+- **SQL Injection:** Always use parameterized queries
+- **Command Injection:** Avoid `os/exec` with user input
+- **Path Traversal:** Validate and sanitize file paths; use `filepath.Clean()`
+
+---
+
+## [P0] DEPENDENCY SECURITY
+
+```bash
+# Go vulnerability scanner
+govulncheck ./...
+
+# Static analysis for security issues
+gosec ./...
+
+# Comprehensive scanner
+trivy fs .
+```
+
+- **Pin exact versions** in `go.mod`
+- **Review dependencies** before adding
+- **Minimize dependencies:** Fewer = smaller attack surface
+
+---
+
+## [P1] LOGGING & SENSITIVE DATA
+
+**NEVER log:** Passwords, API keys, tokens, PII, full request/response bodies
+
+```go
+// Sanitize before logging
+log.Printf("user login attempt: email=%s, success=%v",
+    maskEmail(user.Email), success)
+```
+
+---
+
+## [P0] SECURITY CHECKLIST
+
+- [ ] No secrets in code or version control
+- [ ] All external input validated and sanitized
+- [ ] SQL queries use parameterized statements
+- [ ] Dependencies scanned for vulnerabilities
+- [ ] No sensitive data in logs
+- [ ] Error messages don't leak system information

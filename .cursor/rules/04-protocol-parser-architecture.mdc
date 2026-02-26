@@ -1,0 +1,82 @@
+---
+description: Protocol parser project architecture, domain concepts, and key patterns
+alwaysApply: true
+---
+
+# Protocol Parser Architecture
+
+## Project Overview
+
+Go library that parses EVM transaction calldata and traces for DeFi protocols (Aave, Morpho, Uniswap, Pendle, 1Inch, 0x, Safe, Juice, etc.). It decodes raw hex calldata into structured, typed Go objects.
+
+## Project Structure
+
+```
+pkg/
+├── entity/            # Domain types: selectors, parsed structs, parser kinds, chain IDs
+├── calldata_parser/   # Protocol-specific parsers (one file per protocol)
+├── parser/            # Top-level Parser that orchestrates trace parsing
+├── utils/             # ABI decoding helpers (Parse, mapstructure hooks)
+├── jsonbigint/        # big.Int wrapper with JSON marshaling
+└── testdata/          # Test setup (RPC, address registry, contracts)
+```
+
+## Core Domain Concepts
+
+- **Selector**: First 4 bytes (8 hex chars) of calldata identifying the function signature
+- **Calldata**: Hex-encoded function call data (selector + ABI-encoded parameters)
+- **ParsedTrace**: Tree structure representing an EVM call trace with nested sub-calls
+- **ParsedOutput**: Result of parsing a trace node: `ParsedParams` (typed struct), `Type` (ParserKind), `FuncName`, `ParserName`
+- **ChainID**: Numeric chain identifier (Ethereum=1, Arbitrum=42161, Base=8453, etc.)
+
+## Key Interfaces
+
+### `CalldataParserInterface` (the parser contract)
+
+Every protocol parser must implement:
+
+```go
+type CalldataParserInterface interface {
+    Parse(ctx context.Context, chainID entity.ChainID, trace *entity.ParsedTrace) error
+    Name() string
+    SupportedSelectors() []string
+    SupportedChainsToAddresses() (map[entity.ChainID][]common.Address, error)
+    MethodById([]byte) (*abi.Method, error)
+}
+```
+
+### Parser Resolution Order
+
+`CalldataParser.GetParser()` resolves which parser handles a trace:
+1. If selector is a multicall → check `SelectorToParser`
+2. Check `ChainToAddrToParser[chainID][trace.To]` (address-based)
+3. Check `SelectorToParser[selector]` (selector-based)
+4. Return `ErrParserNotImplemented`
+
+## Key Patterns
+
+### Constructor Pattern
+
+All parsers follow: `NewXxxParser(addressRegistry, clientFactory) (CalldataParserInterface, error)`
+
+### ABI Decoding Flow
+
+1. Strip `0x` prefix, extract 8-char selector
+2. Switch on selector constant from `entity` package
+3. Use `utils.Parse(parser, calldata, "", &targetStruct, nil)` which:
+   - Looks up ABI method by selector via `MethodById()`
+   - Unpacks calldata using go-ethereum's ABI
+   - Decodes via `mapstructure` into the target struct
+
+### Parser Registration
+
+New parsers are registered in `calldata_parser.go`'s `newParserCreators` slice.
+
+## Dependencies
+
+- `go-ethereum` — ABI encoding/decoding, common types (`common.Address`)
+- `mapstructure` — Flexible struct decoding from `map[string]interface{}`
+- `jsonbigint` — `*big.Int` wrapper with JSON marshal support
+- `swype-transaction-builder` — Address registry, contract ABIs
+- `swype-rpc` — RPC client factory
+- `go-safe` — Gnosis Safe transaction types

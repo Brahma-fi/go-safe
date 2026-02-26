@@ -1,0 +1,73 @@
+---
+description: Core Go development standards - error handling, testing, linting, architecture
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# GO - CORE STANDARDS
+
+Core Go development practices and architectural patterns.
+
+---
+
+## [P0] CRITICAL RULES
+
+### Error Handling
+- **Wrap with context:** `fmt.Errorf("operation failed: %w", err)`
+- **Never ignore errors:** No bare `_` assignment without justification
+- **Return errors, don't panic:** Except for programmer errors or initialization failures
+
+### Testing
+- **Table-driven tests** for functions with multiple cases
+- **Aim for 80%+ coverage** on business logic (`go test -cover`)
+- **Subtests for grouping:** `t.Run("case description", func(t *testing.T) {...})`
+- **All existing tests must pass** before completion
+
+### Linting & Formatting
+- **Formatting:** `gofmt` (or `goimports` for import management) with default settings
+- **Static analysis:** `go vet ./...` to catch common mistakes
+- **Linting:** `golangci-lint run` with project config or defaults
+- **Zero errors:** Critical; document any warnings kept
+
+### Dependencies
+- **Pin versions** in `go.mod`; avoid `latest` or floating versions
+- **Run `go mod tidy`** after adding/removing imports
+- **Vendor dependencies** (`go mod vendor`) if required by project policy
+
+### Documentation
+- **Always use the `go.mod` Go version** when searching for documentation and solutions
+- **Public APIs must have doc comments:** `// FunctionName does X and returns Y`
+
+---
+
+## [P1] ARCHITECTURE & PROJECT STRUCTURE
+
+### Architectural Layers
+**Follow dependency rule: Outer → Inner, never Inner → Outer**
+
+### Package Organization Best Practices
+- **Group by feature/domain**, not by layer
+- **Keep packages small and focused:** 5-10 files max per package
+- **Avoid circular dependencies:** Use interfaces to break cycles
+
+### Dependency Injection
+- **Constructor-based injection:** `NewService(repo UserRepository, logger Logger) *Service`
+- **Use interfaces for all external dependencies**
+- **Avoid global state:** No `package var db *sql.DB`
+
+---
+
+## [P1] NAMING CONVENTIONS
+
+- **Avoid stuttering:** Package `http` exports `Client`, not `HTTPClient`
+- **Use `MixedCaps` for exported names**, `mixedCaps` for unexported
+- **Interfaces:** `-er` suffix for single-method interfaces (`Reader`, `Writer`)
+
+---
+
+## ANTI-PATTERNS TO AVOID
+
+- Circular dependencies between packages
+- Business logic in handlers or repositories
+- God packages (packages with 20+ files doing unrelated things)
+- `utils/`, `common/`, `helpers/` as dumping grounds (be specific)

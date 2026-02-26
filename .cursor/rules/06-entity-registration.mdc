@@ -1,0 +1,64 @@
+---
+description: How to register parser kinds, function names, and parser names in the entity package
+globs: pkg/entity/parsers.go
+alwaysApply: false
+---
+
+# Entity & Parser Kind Registration
+
+When adding a new protocol parser, you must update three things in `pkg/entity/parsers.go`:
+
+## 1. Add ParserType Constants
+
+Add new `ParserType` iota constants in the `const` block, grouped by protocol with a comment header:
+
+```go
+const (
+    // ... existing kinds ...
+
+    // NewProtocol Specific
+    NewProtocolSupplyParserKind
+    NewProtocolBorrowParserKind
+    NewProtocolWithdrawParserKind
+)
+```
+
+**Convention:** `<Protocol><Action>ParserKind` (PascalCase, always ends with `ParserKind`)
+
+## 2. Add ParserTypeToFuncName Entry
+
+Maps parser kind to a human-readable function description (displayed in UI):
+
+```go
+var ParserTypeToFuncName = map[ParserType]string{
+    // ... existing ...
+    NewProtocolSupplyParserKind:   "NewProtocol Supply",
+    NewProtocolBorrowParserKind:   "NewProtocol Borrow",
+    NewProtocolWithdrawParserKind: "NewProtocol Withdraw",
+}
+```
+
+## 3. Add ParserTypeToParserName Entry
+
+Maps parser kind to a stable machine-readable name. **CAUTION: key-value pairs must not change once deployed** — they may break integrations.
+
+```go
+var ParserTypeToParserName = map[ParserType]string{
+    // ... existing ...
+    NewProtocolSupplyParserKind:   "NewProtocolSupply",
+    NewProtocolBorrowParserKind:   "NewProtocolBorrow",
+    NewProtocolWithdrawParserKind: "NewProtocolWithdraw",
+}
+```
+
+**Convention:** PascalCase, no spaces, stable identifier.
+
+## Common Pitfall
+
+If you add a `ParserKind` but forget to add it to **both** maps, the parser will log errors at runtime:
+```
+Parser type to func name mapping not populated for parsed kind: <N>
+Parser type to parser name mapping not populated for parsed kind: <N>
+```
+
+Always update all three locations together.

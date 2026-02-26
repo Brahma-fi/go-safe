@@ -19,11 +19,11 @@ var (
 )
 
 type EstimateSafeTransactionGasRequest struct {
+	Value       *big.Int
+	CallData    []byte
+	MaxGasLimit uint64
 	From        common.Address
 	To          common.Address
-	CallData    []byte
-	Value       *big.Int
-	MaxGasLimit uint64
 }
 
 type EstimateSafeTransactionClient interface {

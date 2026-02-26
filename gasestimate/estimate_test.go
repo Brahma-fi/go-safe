@@ -49,10 +49,10 @@ func (m *failingBackend) CallContract(ctx context.Context, msg ethereum.CallMsg,
 func TestEstimateSafeTransactionGasLimit(t *testing.T) {
 	ctx := context.Background()
 	type testParams struct {
-		params        EstimateSafeTransactionGasRequest
 		backend       EstimateSafeTransactionClient
-		expectedLimit uint64
 		err           error
+		params        EstimateSafeTransactionGasRequest
+		expectedLimit uint64
 	}
 	params := []testParams{
 		{

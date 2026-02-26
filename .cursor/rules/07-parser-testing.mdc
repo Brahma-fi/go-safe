@@ -1,0 +1,122 @@
+---
+description: Testing patterns for calldata parsers - table-driven tests, test setup, and assertions
+globs: pkg/calldata_parser/*_test.go
+alwaysApply: false
+---
+
+# Parser Testing Patterns
+
+## Test Structure
+
+All parser tests follow the same table-driven pattern:
+
+```go
+package calldataparser_test
+
+import (
+    "context"
+    "errors"
+    "reflect"
+    "testing"
+
+    "github.com/ethereum/go-ethereum/common"
+    calldataparser "github.com/lastdotnet/protocol-parser/pkg/calldata_parser"
+    "github.com/lastdotnet/protocol-parser/pkg/entity"
+    "github.com/lastdotnet/protocol-parser/pkg/jsonbigint"
+    "github.com/lastdotnet/protocol-parser/pkg/testdata"
+)
+
+func TestProtocolParser(tst *testing.T) {
+    testSetup, err := testdata.SetupTest(tst)
+    if err != nil {
+        tst.Fatal(err)
+    }
+
+    parser, err := calldataparser.NewProtocolParser(testSetup.AddressRegistry, nil)
+    if err != nil {
+        tst.Fatal(err)
+    }
+
+    testCases := []struct {
+        name     string
+        trace    *entity.ParsedTrace
+        err      error
+        expected entity.ParsedOutput
+    }{
+        {
+            name: "Supply",
+            trace: &entity.ParsedTrace{
+                Input: "0x<full_calldata_hex>",
+                From:  common.HexToAddress("0x..."),
+                Value: "0x0",
+                To:    common.HexToAddress("0x<protocol_contract>"),
+            },
+            expected: entity.ParsedOutput{
+                ParsedParams: &entity.ProtocolSupply{
+                    Asset:  common.HexToAddress("0x..."),
+                    Amount: jsonbigint.New(1000000),
+                },
+                Type: entity.ProtocolSupplyParserKind,
+            },
+        },
+    }
+
+    for _, tc := range testCases {
+        tst.Run(tc.name, func(t *testing.T) {
+            err := parser.Parse(context.Background(), entity.EthereumChainID, tc.trace)
+            if !errors.Is(err, tc.err) {
+                t.Errorf("expected error %v, got %v", tc.err, err)
+            }
+            output := tc.trace.ParsedOutput
+            if !reflect.DeepEqual(output.ParsedParams, tc.expected.ParsedParams) {
+                t.Errorf("expected %v, got %v", tc.expected.ParsedParams, output.ParsedParams)
+            }
+        })
+    }
+}
+```
+
+## Test Setup
+
+Tests require environment configuration via `testdata.SetupTest()`:
+- Loads `.env` file with `godotenv`
+- Reads `CFG` env var (JSON with chain-to-RPC URL mappings)
+- Initializes `AddressRegistry`, `ClientFactory`, `ContractProvider`
+
+## Writing Test Cases
+
+### Getting Real Calldata
+
+Use actual on-chain transaction data for test cases:
+- Etherscan → Transaction → Input Data (raw hex)
+- Set `trace.Input` to the full calldata including `0x` prefix
+- Set `trace.From`, `trace.To`, `trace.Value` from the transaction
+
+### Big Integer Values
+
+```go
+// Small values
+amount := jsonbigint.New(500000000)
+
+// Large values — parse from decimal string
+amount, _ := new(jsonbigint.JsonBigInt).SetString("115792089237316195423570985008687907853269984665640564039457584007913129639935", 10)
+```
+
+### Assertions
+
+- Use `errors.Is(err, tc.err)` for error comparison
+- Use `reflect.DeepEqual` for parsed params comparison
+- Parser mutates `trace.ParsedOutput` in place — assert on `tc.trace.ParsedOutput`
+
+### ETH (native) Operations
+
+When testing native ETH operations (deposits, borrows via gateway):
+- `trace.Value` contains the hex ETH amount (e.g., `"0x10"`)
+- The parsed struct typically uses `types.ZeroAddressE` as the asset address
+
+## Running Tests
+
+```bash
+# Requires .env with CFG containing RPC URLs
+go test ./pkg/calldata_parser/... -v -run TestProtocolParser
+```
